@@ -41,22 +41,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   async function fetchProfile(userId: string, userEmail?: string | null) {
-    // 1. Try exact ID match — covers returning users whose profile is already claimed
-    const { data: byId } = await supabase
+    const now = new Date().toISOString()
+
+    // 1. Returning user — already linked to auth.users via auth_user_id
+    const { data: byAuthId } = await supabase
       .from('user_profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('auth_user_id', userId)
       .maybeSingle()
 
-    if (byId) {
-      // Update last_login silently (fire-and-forget, no await)
-      supabase.from('user_profiles').update({ last_login: new Date().toISOString() }).eq('id', userId)
-      setProfile(byId)
+    if (byAuthId) {
+      supabase.from('user_profiles').update({ last_login: now }).eq('auth_user_id', userId)
+      setProfile(byAuthId)
       setLoading(false)
       return
     }
 
-    // 2. Not found by ID — check if an admin pre-created a profile for this email
+    // 2. First login — find a pre-created profile by email and claim it
     const email = userEmail?.toLowerCase()
     if (!email) {
       setProfile(null)
@@ -71,9 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle()
 
     if (byEmail) {
-      // Stamp last_login; we intentionally leave the profile id as-is
-      // (the random UUID from pre-creation). This avoids a risky PK update.
-      supabase.from('user_profiles').update({ last_login: new Date().toISOString() }).eq('email', email)
+      // Link this auth user to the pre-created profile so future logins hit path 1
+      supabase.from('user_profiles')
+        .update({ auth_user_id: userId, last_login: now })
+        .eq('email', email)
       setProfile(byEmail)
     } else {
       setProfile(null)

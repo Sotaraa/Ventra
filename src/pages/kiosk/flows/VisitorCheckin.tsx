@@ -64,14 +64,14 @@ async function notifyHost(
   `
   try {
     await sendEmail(msalInstance, form.host.email, subject, body)
-    await supabase.from('notifications_log').insert({
+    await supabase.from('notification_logs').insert({
       site_id: site.id, visit_log_id: visitLogId,
       recipient_email: form.host.email, recipient_name: form.host.full_name,
       channel: 'email', subject, sent_at: new Date().toISOString(), delivered: true,
     })
   } catch (err) {
     console.warn('Host notification failed:', err)
-    await supabase.from('notifications_log').insert({
+    await supabase.from('notification_logs').insert({
       site_id: site.id, visit_log_id: visitLogId,
       recipient_email: form.host.email, recipient_name: form.host.full_name,
       channel: 'email', subject, sent_at: new Date().toISOString(),

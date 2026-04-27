@@ -37,7 +37,7 @@ export default function StaffCheckin() {
           signed_in_at: now,
           signed_out_at: null,
         },
-        { onConflict: 'person_id,date', ignoreDuplicates: false }
+        { onConflict: 'site_id,person_id,date', ignoreDuplicates: false }
       )
 
     if (err) {

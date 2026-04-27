@@ -33,6 +33,7 @@ export interface Site {
 export interface UserProfile {
   id: string
   site_id: string
+  auth_user_id?: string
   email: string
   full_name: string
   role: UserRole

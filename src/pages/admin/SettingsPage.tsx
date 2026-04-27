@@ -1022,7 +1022,7 @@ function IntegrationsSection() {
       </div>
 
       {/* iSAMS */}
-      <div className="border-2 border-green-200 bg-green-50 rounded-xl p-5">
+      <div className="border-2 border-gray-200 bg-white rounded-xl p-5">
         <div className="flex items-start gap-4">
           <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0 mt-0.5">
             iS
@@ -1030,42 +1030,16 @@ function IntegrationsSection() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <p className="font-semibold text-gray-900 text-sm">iSAMS</p>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-green-100 text-green-700">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                Connected
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                Not configured
               </span>
             </div>
             <p className="text-xs text-gray-500">Sync student and staff records directly from your iSAMS Management Information System.</p>
-            <p className="text-xs mt-1.5 font-medium text-green-700">
-              kewhouse.isams.cloud · staff &amp; students sync enabled
+            <p className="text-xs mt-1.5 font-medium text-gray-400">
+              Contact support to enable your iSAMS integration.
             </p>
-
-            {/* Sync result */}
-            {lastResult && (
-              <div className={`mt-3 p-3 rounded-lg text-xs ${lastResult.errors.length > 0 ? 'bg-amber-50 text-amber-800' : 'bg-white text-gray-700'}`}>
-                {lastResult.errors.length === 0 ? (
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle size={13} className="text-green-500" />
-                    <strong>{lastResult.staff_synced}</strong> staff and <strong>{lastResult.students_synced}</strong> students synced successfully
-                  </span>
-                ) : (
-                  <span>{lastResult.errors.join(' · ')}</span>
-                )}
-              </div>
-            )}
           </div>
-
-          {/* Sync button */}
-          <button
-            onClick={runIsamsSync}
-            disabled={syncing}
-            className="btn-secondary text-sm py-2 px-4 flex-shrink-0"
-          >
-            {syncing
-              ? <><RefreshCw size={14} className="animate-spin" /> Syncing…</>
-              : <><RefreshCw size={14} /> Sync Now</>
-            }
-          </button>
         </div>
       </div>
 
