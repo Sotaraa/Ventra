@@ -28,12 +28,14 @@ export interface Site {
   logo_url?: string
   timezone: string
   is_active: boolean
+  tenant_id?: string
   created_at: string
 }
 
 export interface UserProfile {
   id: string
-  site_id: string
+  site_id: string | null   // null = trust admin (manages all schools in their tenant)
+  tenant_id?: string
   auth_user_id?: string
   email: string
   full_name: string

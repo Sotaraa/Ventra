@@ -2,12 +2,13 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, UserCheck, ClipboardList,
   BarChart2, Settings, LogOut, ShieldAlert, QrCode,
-  Bell, BookOpen, X, Flame, Building2,
+  Bell, BookOpen, X, Flame, Building2, ChevronDown, Check,
 } from 'lucide-react'
+import { useState } from 'react'
 import { useAuth } from '@/store/AuthContext'
 import { useApp } from '@/store/AppContext'
 import Logo from '@/components/Logo'
-import type { UserRole } from '@/types'
+import type { Site, UserRole } from '@/types'
 
 interface NavItem {
   label: string
@@ -29,11 +30,69 @@ const navItems: NavItem[] = [
   { label: 'Reports',      path: '/admin/reports',       icon: <BarChart2 size={18} />,       roles: ['super_admin', 'site_admin'],                           group: 'Admin' },
   { label: 'Audit Log',    path: '/admin/audit',         icon: <ClipboardList size={18} />,   roles: ['super_admin', 'site_admin'],                           group: 'Admin' },
   { label: 'Settings',     path: '/admin/settings',      icon: <Settings size={18} />,        roles: ['super_admin', 'site_admin'],                           group: 'Admin' },
-  { label: 'Customers',   path: '/admin/customers',     icon: <Building2 size={18} />,       roles: ['super_admin'],                                            group: 'Sotara' },
+  { label: 'Customers',    path: '/admin/customers',     icon: <Building2 size={18} />,       roles: ['super_admin'],                                          group: 'Sotara' },
 ]
 
+// ─── School Switcher ──────────────────────────────────────────────────────────
+// Only renders when the user is a trust admin managing multiple schools
+
+function SiteSwitcher({ sites, current, onSwitch }: {
+  sites: Site[]
+  current: Site | null
+  onSwitch: (site: Site) => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  if (sites.length <= 1) return null
+
+  return (
+    <div className="px-3 pb-3 relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] transition-colors text-left"
+      >
+        <div className="w-5 h-5 rounded-md bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+          <Building2 size={11} className="text-amber-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold leading-none mb-0.5">School</p>
+          <p className="text-xs font-semibold text-white/80 truncate">{current?.name ?? 'Select school'}</p>
+        </div>
+        <ChevronDown size={13} className={`text-white/30 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute left-3 right-3 top-full mt-1 z-20 bg-gray-900 border border-white/10 rounded-xl shadow-xl overflow-hidden">
+            {sites.map(site => (
+              <button
+                key={site.id}
+                onClick={() => { onSwitch(site); setOpen(false) }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-white/[0.07] transition-colors text-left"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white/80 truncate">{site.name}</p>
+                  {site.slug && (
+                    <p className="text-[10px] text-white/30 font-mono">{site.slug}</p>
+                  )}
+                </div>
+                {current?.id === site.id && (
+                  <Check size={13} className="text-amber-400 flex-shrink-0" />
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
 export default function Sidebar() {
-  const { profile, user, signOut } = useAuth()
+  const { profile, user, signOut, currentSite, availableSites, switchSite } = useAuth()
   const { sidebarOpen, setSidebarOpen } = useApp()
 
   const role = profile?.role ?? null
@@ -75,6 +134,17 @@ export default function Sidebar() {
             <X size={18} />
           </button>
         </div>
+
+        {/* School switcher — shown only for trust admins with multiple schools */}
+        {availableSites.length > 1 && (
+          <div className="pt-3 border-b border-white/[0.07]">
+            <SiteSwitcher
+              sites={availableSites}
+              current={currentSite}
+              onSwitch={switchSite}
+            />
+          </div>
+        )}
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
@@ -118,7 +188,9 @@ export default function Sidebar() {
                 {profile?.full_name ?? user?.email?.split('@')[0] ?? '…'}
               </p>
               <p className="text-[11px] text-white/35 capitalize tracking-wide">
-                {role ? role.replace(/_/g, ' ') : '…'}
+                {profile?.site_id == null && profile?.tenant_id
+                  ? 'trust admin'
+                  : role ? role.replace(/_/g, ' ') : '…'}
               </p>
             </div>
             <button

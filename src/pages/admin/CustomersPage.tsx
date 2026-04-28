@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 import TopBar from '@/components/layout/TopBar'
 import {
   Plus, Building2, Copy, Check, X, ChevronRight,
-  Users, ExternalLink, Loader2,
+  Users, ExternalLink, Loader2, School,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -40,6 +40,7 @@ export default function CustomersPage() {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [addSchoolTenant, setAddSchoolTenant] = useState<Tenant | null>(null)
 
   async function load() {
     setLoading(true)
@@ -134,9 +135,19 @@ export default function CustomersPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0 text-xs text-gray-400">
-                      <Users size={13} />
-                      {tenant.sites.length} site{tenant.sites.length !== 1 ? 's' : ''}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <Users size={13} />
+                        {tenant.sites.length} site{tenant.sites.length !== 1 ? 's' : ''}
+                      </span>
+                      <button
+                        onClick={() => setAddSchoolTenant(tenant)}
+                        className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors px-2 py-1 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/30"
+                        title="Add another school under this tenant"
+                      >
+                        <Plus size={13} />
+                        Add School
+                      </button>
                     </div>
                   </div>
                 </li>
@@ -150,6 +161,14 @@ export default function CustomersPage() {
         <OnboardModal
           onClose={() => setShowModal(false)}
           onCreated={() => { setShowModal(false); load() }}
+        />
+      )}
+
+      {addSchoolTenant && (
+        <AddSchoolModal
+          tenant={addSchoolTenant}
+          onClose={() => setAddSchoolTenant(null)}
+          onCreated={() => { setAddSchoolTenant(null); load() }}
         />
       )}
     </div>
@@ -464,6 +483,254 @@ function OnboardModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
               <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button>
               <button type="submit" className="btn-primary flex-1">
                 <Building2 size={15} /> Create Customer
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Add School Modal ─────────────────────────────────────────────────────────
+// Adds a new site under an EXISTING tenant (e.g. adding RPPS under GSG)
+
+interface AddSchoolFormData {
+  schoolName: string
+  siteSlug:   string
+  adminName:  string
+  adminEmail: string
+  makeTrustAdmin: boolean  // promote existing IT admin to trust admin
+}
+
+type AddSchoolStep = 'form' | 'saving' | 'done'
+
+function AddSchoolModal({ tenant, onClose, onCreated }: {
+  tenant: Tenant
+  onClose: () => void
+  onCreated: () => void
+}) {
+  const [step, setStep]   = useState<AddSchoolStep>('form')
+  const [newSiteSlug, setNewSiteSlug] = useState('')
+  const [error, setError] = useState('')
+
+  const [form, setForm] = useState<AddSchoolFormData>({
+    schoolName:     '',
+    siteSlug:       '',
+    adminName:      '',
+    adminEmail:     '',
+    makeTrustAdmin: false,
+  })
+
+  function set(field: keyof AddSchoolFormData, value: string | boolean) {
+    setForm(prev => {
+      const next = { ...prev, [field]: value }
+      if (field === 'schoolName' && typeof value === 'string') {
+        next.siteSlug = toSlug(value)
+      }
+      return next
+    })
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.schoolName || !form.siteSlug) {
+      setError('School name and slug are required.')
+      return
+    }
+    setError('')
+    setStep('saving')
+
+    try {
+      // 1. Create the new site under the existing tenant
+      const { data: site, error: siteErr } = await supabase
+        .from('sites')
+        .insert({
+          tenant_id: tenant.id,
+          name:      form.schoolName,
+          slug:      form.siteSlug,
+          address:   'United Kingdom',
+          timezone:  'Europe/London',
+          is_active: true,
+        })
+        .select('id')
+        .single()
+      if (siteErr) throw new Error('Could not create site: ' + siteErr.message)
+
+      // 2. Optionally create a school-specific admin
+      if (form.adminEmail.trim()) {
+        const { error: profileErr } = await supabase
+          .from('user_profiles')
+          .insert({
+            site_id:   site.id,
+            tenant_id: tenant.id,
+            email:     form.adminEmail.toLowerCase().trim(),
+            full_name: form.adminName || form.adminEmail.split('@')[0],
+            role:      'site_admin',
+            is_active: true,
+          })
+        if (profileErr) throw new Error('Could not create admin profile: ' + profileErr.message)
+      }
+
+      // 3. Optionally promote all existing trust admins in this tenant
+      //    (site_id IS NULL means they're already trust admins — nothing to do)
+      //    If makeTrustAdmin is checked, update all site_admin profiles in this
+      //    tenant that have site_id set to NULL so they become trust admins.
+      if (form.makeTrustAdmin) {
+        await supabase
+          .from('user_profiles')
+          .update({ site_id: null })
+          .eq('tenant_id', tenant.id)
+          .eq('role', 'site_admin')
+          .not('site_id', 'is', null)
+      }
+
+      setNewSiteSlug(form.siteSlug)
+      setStep('done')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      setStep('form')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={step !== 'saving' ? onClose : undefined} />
+      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/[0.07]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center">
+              <School size={18} className="text-brand-600 dark:text-brand-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Add School</h2>
+              <p className="text-xs text-gray-400">Adding to <span className="font-medium text-gray-600 dark:text-gray-300">{tenant.name}</span></p>
+            </div>
+          </div>
+          {step !== 'saving' && (
+            <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 flex items-center justify-center">
+              <X size={18} className="text-gray-500" />
+            </button>
+          )}
+        </div>
+
+        {/* Saving */}
+        {step === 'saving' && (
+          <div className="flex flex-col items-center gap-4 py-16">
+            <Loader2 size={36} className="text-brand-600 animate-spin" />
+            <p className="text-sm text-gray-500">Creating school…</p>
+          </div>
+        )}
+
+        {/* Done */}
+        {step === 'done' && (
+          <div className="p-6 space-y-5">
+            <div className="flex flex-col items-center gap-2 py-2 text-center">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <Check size={24} className="text-green-600" />
+              </div>
+              <h3 className="font-bold text-gray-900 dark:text-white text-lg">School Added!</h3>
+              <p className="text-sm text-gray-500">
+                The IT admin can switch schools using the sidebar dropdown.
+                {form.makeTrustAdmin && ' All existing admins have been promoted to trust admin.'}
+              </p>
+            </div>
+            <UrlCard
+              label="Kiosk URL"
+              description="Bookmark this on the reception tablet for this school"
+              url={`${APP_URL}/kiosk?site=${newSiteSlug}`}
+            />
+            <button onClick={onCreated} className="btn-primary w-full">Done</button>
+          </div>
+        )}
+
+        {/* Form */}
+        {step === 'form' && (
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                School Name
+              </label>
+              <input
+                className="input"
+                placeholder="e.g. RPPS"
+                value={form.schoolName}
+                onChange={e => set('schoolName', e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Site Slug <span className="text-gray-400 normal-case font-normal">(kiosk URL identifier)</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 whitespace-nowrap">?site=</span>
+                <input
+                  className="input font-mono text-sm"
+                  placeholder="rpps"
+                  value={form.siteSlug}
+                  onChange={e => set('siteSlug', toSlug(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 dark:border-white/[0.07] pt-4 space-y-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                School Admin <span className="normal-case font-normal text-gray-400">(optional — leave blank if shared)</span>
+              </p>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Full Name</label>
+                <input
+                  className="input"
+                  placeholder="e.g. Sarah Jones"
+                  value={form.adminName}
+                  onChange={e => set('adminName', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Work Email</label>
+                <input
+                  className="input"
+                  type="email"
+                  placeholder="e.g. sarah@rpps.co.uk"
+                  value={form.adminEmail}
+                  onChange={e => set('adminEmail', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 dark:border-white/[0.07] pt-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.makeTrustAdmin}
+                  onChange={e => set('makeTrustAdmin', e.target.checked)}
+                  className="w-4 h-4 rounded mt-0.5 flex-shrink-0"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white">Promote existing admins to trust admin</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    The IT admin will get a school switcher in their sidebar to manage all schools under {tenant.name}.
+                    Recommended when one person manages the whole trust.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+              <button type="submit" className="btn-primary flex-1">
+                <School size={15} /> Add School
               </button>
             </div>
           </form>
