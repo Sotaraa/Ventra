@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useSite } from '@/hooks/useSite'
 import TopBar from '@/components/layout/TopBar'
 import { UserCheck, UserX, Clock, AlertTriangle, RefreshCw, LogOut } from 'lucide-react'
 import { format } from 'date-fns'
@@ -16,6 +17,7 @@ const GROUP_TABS: { label: string; value: PersonGroup | 'all' }[] = [
 ]
 
 export default function AttendanceDashboard() {
+  const { site } = useSite()
   const [presentList, setPresentList] = useState<AttendanceRecord[]>([])
   const [absentList,  setAbsentList]  = useState<NotInBuilding[]>([])
   const [loading,     setLoading]     = useState(true)
@@ -24,11 +26,13 @@ export default function AttendanceDashboard() {
   const today = new Date().toISOString().slice(0, 10)
 
   async function load() {
+    if (!site?.id) return
     setLoading(true)
 
     const { data: presentData, error: presentErr } = await supabase
       .from('attendance_records')
       .select('*, person:persons(id, first_name, last_name, full_name, group, year_group, department, email)')
+      .eq('site_id', site.id)
       .eq('date', today)
       .eq('status', 'present')
       .is('signed_out_at', null)
@@ -50,6 +54,7 @@ export default function AttendanceDashboard() {
     let personsQ = supabase
       .from('persons')
       .select('*')
+      .eq('site_id', site.id)
       .eq('is_active', true)
       .not('group', 'eq', 'contractor')
       .not('group', 'eq', 'governor')
@@ -64,7 +69,7 @@ export default function AttendanceDashboard() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [groupFilter])
+  useEffect(() => { load() }, [groupFilter, site?.id])
 
   async function signOut(record: AttendanceRecord) {
     const { error } = await supabase
