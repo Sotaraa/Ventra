@@ -21,8 +21,9 @@ deployment (one for your SaaS product), not one per client.
 
 ## Part 1 — Create the Azure App Registration
 
-> Do this once. This registration lives in **your** Azure tenant (Sotaraa's tenant),
-> not the client's. Future clients grant consent to this same app.
+> ✅ **Already done.** "Sotara - Ventra VMS" is registered in SOTARA's Azure tenant
+> (`info@sotara.co.uk`). Application (client) ID: `94f84d52-8f71-4339-a6da-625c827e0e40`.
+> Future clients grant consent to this same app — you never touch Azure again for new clients.
 
 ### 1.1 Register the application
 
@@ -210,12 +211,16 @@ When a new client (school or trust) signs up, here is what happens on each side.
 
 They do not create an App Registration. They grant consent to **your** existing app.
 
-1. Send the client this admin consent URL (replace `YOUR_CLIENT_ID`):
+1. Send the client this admin consent URL (fixed — uses SOTARA's app):
    ```
-   https://login.microsoftonline.com/common/adminconsent?client_id=YOUR_CLIENT_ID
+   https://login.microsoftonline.com/common/adminconsent?client_id=94f84d52-8f71-4339-a6da-625c827e0e40
    ```
 2. Their **Global Administrator** opens this URL and clicks **Accept**
 3. That's it — their staff can now log in to Ventra using their Microsoft 365 accounts
+
+> ℹ️ Microsoft may show a "publisher not verified" warning to end users, but the
+> Global Admin consent flow bypasses this entirely. Clients using the adminconsent
+> URL above will not see this warning.
 
 > If the client doesn't have a Microsoft 365 tenant (or doesn't want to use it),
 > they use email/password login instead. No consent step needed. You just create
@@ -223,11 +228,24 @@ They do not create an App Registration. They grant consent to **your** existing 
 
 ---
 
+## SOTARA App Registration Reference
+
+| Field | Value |
+|---|---|
+| App name | Sotara - Ventra VMS |
+| Azure account | info@sotara.co.uk |
+| Application (client) ID | `94f84d52-8f71-4339-a6da-625c827e0e40` |
+| Directory (tenant) ID | `deef90b7-a94c-4dd3-92a1-5d8055068d6b` |
+| Supported account types | Multitenant (All Microsoft account users) |
+| Secret expiry | ~April 2027 — rotate before then |
+
+---
+
 ## Rotating the Client Secret
 
-The client secret expires (24 months recommended). **Before it expires:**
+The client secret expires (~24 months). **Before it expires:**
 
-1. Azure Portal → App registrations → Ventra VMS → Certificates & secrets
+1. Azure Portal → App registrations → Sotara - Ventra VMS → Certificates & secrets
 2. Add a **new** client secret (don't delete the old one yet)
 3. Update the secret in Supabase → Authentication → Azure provider
 4. Verify login still works
