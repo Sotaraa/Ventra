@@ -953,41 +953,11 @@ function SafeguardingSettingsForm({ siteId }: { siteId: string }) {
 
 // ─── Integrations ─────────────────────────────────────────────────────────────
 
-interface SyncResult {
-  staff_synced: number
-  students_synced: number
-  errors: string[]
-}
-
 function IntegrationsSection() {
   const azureConfigured = !!(
     import.meta.env.VITE_AZURE_CLIENT_ID &&
     import.meta.env.VITE_AZURE_CLIENT_ID !== 'PLACEHOLDER_CLIENT_ID'
   )
-
-  const [syncing,    setSyncing]    = useState(false)
-  const [lastResult, setLastResult] = useState<SyncResult | null>(null)
-
-  async function runIsamsSync() {
-    setSyncing(true)
-    setLastResult(null)
-    try {
-      const { data, error } = await supabase.functions.invoke('isams-sync', {
-        method: 'POST',
-      })
-      if (error) throw new Error(error.message)
-      setLastResult(data as SyncResult)
-      if (data?.errors?.length > 0) {
-        toast.error(`Sync completed with errors: ${data.errors[0]}`)
-      } else {
-        toast.success(`Synced ${data.staff_synced} staff · ${data.students_synced} students from iSAMS`)
-      }
-    } catch (e: any) {
-      toast.error(`iSAMS sync failed: ${e.message}`)
-    } finally {
-      setSyncing(false)
-    }
-  }
 
   return (
     <div className="space-y-4">
