@@ -9,6 +9,7 @@ import {
   Bell, Printer, Users, Globe, Shield,
   Loader2, CheckCircle, RefreshCw, Trash2,
   Plus, X, Plug, Info, Search, Upload, ImageOff,
+  Crown, MonitorSmartphone, BookOpen, BellRing, ShieldCheck,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { UserRole } from '@/types'
@@ -129,7 +130,7 @@ function SiteDetailsForm({ siteId }: { siteId: string }) {
           <div className="space-y-2">
             <p className="text-xs text-gray-500">
               PNG, JPG, SVG or WebP · Max 2 MB<br />
-              Displayed on the visitor kiosk — transparent backgrounds work best.
+              Displayed on the visitor kiosk. Transparent backgrounds work best.
             </p>
             <div className="flex gap-2">
               <input
@@ -246,7 +247,7 @@ function NotificationsForm({ siteId }: { siteId: string }) {
           <p className="font-semibold mb-1">How visitor notifications work</p>
           <p className="text-xs text-blue-700 leading-relaxed">
             When a visitor signs in at the kiosk, an email is <strong>automatically</strong> sent to whoever
-            they say they are visiting — no manual action needed. The settings below let you configure
+            they say they are visiting. No manual action needed. The settings below let you configure
             an additional CC address and optional Teams alert for every arrival.
           </p>
         </div>
@@ -267,7 +268,7 @@ function NotificationsForm({ siteId }: { siteId: string }) {
           <div>
             <label className="label">
               Reception / Central CC Email
-              <span className="ml-1 text-gray-400 font-normal text-xs">(optional — copied on every arrival)</span>
+              <span className="ml-1 text-gray-400 font-normal text-xs">(optional, copied on every arrival)</span>
             </label>
             <input
               type="email"
@@ -577,7 +578,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 }
 
 const ROLE_DESC: Record<UserRole, string> = {
-  super_admin: 'Full access — all sites and settings',
+  super_admin: 'Full access to all sites and settings',
   site_admin:  'Full access to this site',
   reception:   'Visitor management and reception dashboard',
   teacher:     'Class register and attendance',
@@ -585,11 +586,19 @@ const ROLE_DESC: Record<UserRole, string> = {
 }
 
 const ROLE_COLOUR: Record<UserRole, string> = {
-  super_admin: 'bg-red-100 text-red-700',
-  site_admin:  'bg-brand-100 text-brand-700',
-  reception:   'bg-green-100 text-green-700',
-  teacher:     'bg-blue-100 text-blue-700',
-  host:        'bg-gray-100 text-gray-600',
+  super_admin: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+  site_admin:  'bg-brand-50 text-brand-700 ring-1 ring-brand-200',
+  reception:   'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+  teacher:     'bg-sky-50 text-sky-700 ring-1 ring-sky-200',
+  host:        'bg-slate-100 text-slate-600 ring-1 ring-slate-200',
+}
+
+const ROLE_ICON: Record<UserRole, React.ReactNode> = {
+  super_admin: <Crown size={11} />,
+  site_admin:  <ShieldCheck size={11} />,
+  reception:   <MonitorSmartphone size={11} />,
+  teacher:     <BookOpen size={11} />,
+  host:        <BellRing size={11} />,
 }
 
 interface UserProfileRow {
@@ -654,7 +663,7 @@ function UserRolesSection({ siteId }: { siteId: string }) {
         <div className="text-center py-12 text-gray-400">
           <Users size={36} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">No users yet</p>
-          <p className="text-sm mt-1">Add a user below — they will be matched when they first log in</p>
+          <p className="text-sm mt-1">Add a user below. They will be matched when they first log in.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -676,7 +685,7 @@ function UserRolesSection({ siteId }: { siteId: string }) {
                 <select
                   value={user.role}
                   onChange={e => changeRole(user.id, e.target.value as UserRole)}
-                  className={`text-xs font-semibold px-2 py-1.5 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-brand-400 cursor-pointer ${ROLE_COLOUR[user.role]}`}
+                  className={`text-xs font-semibold px-2 py-1.5 rounded-md border-0 focus:outline-none focus:ring-2 focus:ring-brand-400 cursor-pointer ${ROLE_COLOUR[user.role]}`}
                 >
                   {(Object.keys(ROLE_LABELS) as UserRole[]).map(r => (
                     <option key={r} value={r}>{ROLE_LABELS[r]}</option>
@@ -699,11 +708,14 @@ function UserRolesSection({ siteId }: { siteId: string }) {
 
       {/* Role legend */}
       <div className="mt-4 p-4 bg-gray-50 rounded-xl">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Role Permissions</p>
-        <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Role Permissions</p>
+        <div className="space-y-2">
           {(Object.keys(ROLE_LABELS) as UserRole[]).map(r => (
-            <div key={r} className="flex items-start gap-2">
-              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${ROLE_COLOUR[r]}`}>{ROLE_LABELS[r]}</span>
+            <div key={r} className="flex items-center gap-3">
+              <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md font-semibold flex-shrink-0 ${ROLE_COLOUR[r]}`}>
+                {ROLE_ICON[r]}
+                {ROLE_LABELS[r]}
+              </span>
               <span className="text-xs text-gray-500">{ROLE_DESC[r]}</span>
             </div>
           ))}

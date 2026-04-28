@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useSite } from '@/hooks/useSite'
 import TopBar from '@/components/layout/TopBar'
-import { FileText, Download, Calendar, Loader2, Shield, Flame, UserX } from 'lucide-react'
+import { Eye, UserCheck, Users, Download, Calendar, Loader2, Shield, Flame, UserX } from 'lucide-react'
 import { format, subDays, startOfWeek, endOfWeek, differenceInMinutes } from 'date-fns'
 import toast from 'react-hot-toast'
 
@@ -362,7 +362,7 @@ export default function ReportsPage() {
         <div className="card p-6">
           <div className="flex items-start gap-4 mb-5">
             <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
-              <FileText size={20} className="text-blue-600" />
+              <Eye size={20} className="text-blue-600" />
             </div>
             <div>
               <p className="font-semibold text-gray-900">Visitor Log</p>
@@ -400,7 +400,7 @@ export default function ReportsPage() {
         <div className="card p-6">
           <div className="flex items-start gap-4 mb-5">
             <div className="p-2 bg-green-50 rounded-lg flex-shrink-0">
-              <FileText size={20} className="text-green-600" />
+              <UserCheck size={20} className="text-green-600" />
             </div>
             <div>
               <p className="font-semibold text-gray-900">Attendance Report</p>
@@ -438,11 +438,11 @@ export default function ReportsPage() {
         <div className="card p-6">
           <div className="flex items-start gap-4 mb-4">
             <div className="p-2 bg-brand-50 rounded-lg flex-shrink-0">
-              <FileText size={20} className="text-brand-600" />
+              <Users size={20} className="text-brand-600" />
             </div>
             <div className="flex-1">
               <p className="font-semibold text-gray-900">People Export</p>
-              <p className="text-sm text-gray-500">All staff and student records — name, email, group, department, year group</p>
+              <p className="text-sm text-gray-500">All staff and student records: name, email, group, department and year group</p>
             </div>
             <span className="badge-gray text-xs">CSV</span>
           </div>
@@ -503,7 +503,7 @@ export default function ReportsPage() {
             </div>
             <div>
               <p className="font-semibold text-gray-900">Safeguarding Report (SCR)</p>
-              <p className="text-sm text-gray-500">Single Central Register — DBS records and active watchlist in one export</p>
+              <p className="text-sm text-gray-500">Single Central Register: DBS records and active watchlist in one export</p>
             </div>
             <span className="badge-gray text-xs ml-auto">CSV</span>
           </div>
@@ -562,7 +562,7 @@ export default function ReportsPage() {
         <div className="card p-6">
           <p className="font-semibold text-gray-900 mb-1">Scheduled Reports</p>
           <p className="text-sm text-gray-500 mb-4">
-            Automatic report delivery via email — configure in Settings &rarr; Notifications.
+            Automatic report delivery via email. Configure in Settings &rarr; Notifications.
           </p>
           <div className="text-center py-8 text-gray-400">
             <Calendar size={32} className="mx-auto mb-2 opacity-40" />

@@ -49,12 +49,12 @@ const KIND_CONFIG: Record<EventKind, {
   person_added:       { icon: <UserPlus size={14} />,   bg: 'bg-purple-100', text: 'text-purple-600', label: 'Person Added' },
 }
 
-const GROUP_BADGE: Record<string, string> = {
-  student:           'bg-green-50 text-green-700',
-  teaching_staff:    'bg-blue-50 text-blue-700',
-  non_teaching_staff:'bg-indigo-50 text-indigo-700',
-  contractor:        'bg-orange-50 text-orange-700',
-  governor:          'bg-purple-50 text-purple-700',
+const GROUP_BADGE: Record<string, { text: string; dot: string }> = {
+  student:           { text: 'text-green-700',  dot: 'bg-green-500' },
+  teaching_staff:    { text: 'text-blue-700',   dot: 'bg-blue-500' },
+  non_teaching_staff:{ text: 'text-indigo-700', dot: 'bg-indigo-500' },
+  contractor:        { text: 'text-orange-700', dot: 'bg-orange-500' },
+  governor:          { text: 'text-purple-700', dot: 'bg-purple-500' },
 }
 
 const GROUP_LABEL: Record<string, string> = {
@@ -247,7 +247,7 @@ export default function AuditLogPage() {
           id: `ab-${a.id}`,
           kind: a.authorised ? 'absence_authorised' : 'absence_added',
           ts: a.created_at,
-          label: `${p.full_name} — ${formatAbsenceType(a.absence_type)} absence`,
+          label: `${p.full_name}: ${formatAbsenceType(a.absence_type)} absence`,
           meta: [range, a.reason].filter(Boolean).join(' · '),
           group: p.group,
         })
@@ -395,12 +395,12 @@ export default function AuditLogPage() {
             grouped.map(({ day, items }) => (
               <div key={day}>
                 {/* Day header */}
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                <div className="flex items-center gap-3 mb-3 mt-2">
+                  <span className="text-xs font-bold text-gray-700 uppercase tracking-widest whitespace-nowrap">
                     {formatDayLabel(day)}
                   </span>
-                  <div className="flex-1 h-px bg-gray-100" />
-                  <span className="text-xs text-gray-400">{items.length} events</span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent" />
+                  <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{items.length}</span>
                 </div>
 
                 {/* Events card */}
@@ -418,13 +418,18 @@ export default function AuditLogPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium text-gray-900">{evt.label}</p>
-                            {evt.group && evt.group !== 'visitor' && (
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${GROUP_BADGE[evt.group] ?? 'bg-gray-100 text-gray-600'}`}>
-                                {GROUP_LABEL[evt.group] ?? evt.group}
-                              </span>
-                            )}
+                            {evt.group && evt.group !== 'visitor' && (() => {
+                              const gb = GROUP_BADGE[evt.group]
+                              return (
+                                <span className={`inline-flex items-center gap-1 text-xs font-medium ${gb?.text ?? 'text-gray-500'}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${gb?.dot ?? 'bg-gray-400'}`} />
+                                  {GROUP_LABEL[evt.group] ?? evt.group}
+                                </span>
+                              )
+                            })()}
                             {evt.group === 'visitor' && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700">
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-600">
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-brand-500" />
                                 Visitor
                               </span>
                             )}
