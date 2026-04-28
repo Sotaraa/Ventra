@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabaseKiosk as supabase } from '@/lib/supabase'
+import { useSite } from '@/hooks/useSite'
 import PersonBrowser from '@/components/kiosk/PersonBrowser'
 import { CheckCircle } from 'lucide-react'
 import type { Person } from '@/types'
@@ -18,6 +19,7 @@ const REASONS = [
 
 export default function StudentCheckout() {
   const navigate = useNavigate()
+  const { site } = useSite()
   const [step, setStep] = useState<Step>('browse')
   const [selected, setSelected] = useState<Person | null>(null)
   const [reason, setReason] = useState('')
@@ -142,6 +144,7 @@ export default function StudentCheckout() {
 
   return (
     <PersonBrowser
+      siteId={site?.id ?? ''}
       groups={['student']}
       title="Student Sign Out"
       subtitle="Only students currently signed in are shown"
