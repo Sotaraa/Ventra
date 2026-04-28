@@ -166,7 +166,8 @@ export async function listGroups(
 ): Promise<{ id: string; displayName: string }[]> {
   const groups = await graphFetchAll<{ id: string; displayName: string }>(
     msalInstance,
-    '/groups?$select=id,displayName&$top=999&$orderby=displayName'
+    '/groups?$select=id,displayName&$top=999'
   )
-  return groups
+  // Sort client-side — $orderby on groups requires ConsistencyLevel header
+  return groups.sort((a, b) => a.displayName.localeCompare(b.displayName))
 }
