@@ -159,6 +159,7 @@ export default function AzureSyncModal({ siteId, onClose, onSynced }: Props) {
 
     const { data: existing } = await supabase
       .from('persons').select('id,first_name,last_name,email,department,group')
+      .eq('site_id', siteId)
       .eq('azure_oid', member.id).maybeSingle()
 
     if (existing) {
