@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useSite } from '@/hooks/useSite'
 import TopBar from '@/components/layout/TopBar'
 import { Users, UserCheck, UserX, AlertTriangle, Zap, ShieldAlert, FileText, RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
@@ -8,6 +9,7 @@ import type { OccupancyCount } from '@/types'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
+  const { site } = useSite()
   const [occupancy, setOccupancy] = useState<OccupancyCount>({
     students: 0, teaching_staff: 0, non_teaching_staff: 0, contractors: 0, visitors: 0, total: 0,
   })
@@ -15,18 +17,21 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   async function load() {
+    if (!site?.id) return
     setLoading(true)
     const today = new Date().toISOString().slice(0, 10)
 
     const { count: visitorCount } = await supabase
       .from('visit_logs')
       .select('*', { count: 'exact', head: true })
+      .eq('site_id', site.id)
       .eq('status', 'checked_in')
       .gte('checked_in_at', `${today}T00:00:00`)
 
     const { data: attendance } = await supabase
       .from('attendance_records')
       .select('person:persons(group)')
+      .eq('site_id', site.id)
       .eq('date', today)
       .eq('status', 'present')
       .is('signed_out_at', null)
@@ -51,6 +56,7 @@ export default function AdminDashboard() {
     const { count: absent } = await supabase
       .from('attendance_records')
       .select('*', { count: 'exact', head: true })
+      .eq('site_id', site.id)
       .eq('date', today)
       .in('status', ['absent', 'unauthorised_absence'])
 
@@ -58,7 +64,7 @@ export default function AdminDashboard() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [site?.id])
 
   return (
     <div>

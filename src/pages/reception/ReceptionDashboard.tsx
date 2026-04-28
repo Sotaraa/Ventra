@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useSite } from '@/hooks/useSite'
 import TopBar from '@/components/layout/TopBar'
 import { Users, UserCheck, Clock, AlertTriangle, RefreshCw } from 'lucide-react'
 import type { VisitLog } from '@/types'
 import { format } from 'date-fns'
 
 export default function ReceptionDashboard() {
+  const { site } = useSite()
   const [activeVisitors,    setActiveVisitors]    = useState<VisitLog[]>([])
   const [checkedInToday,    setCheckedInToday]    = useState(0)
   const [loading,           setLoading]           = useState(true)
@@ -13,12 +15,14 @@ export default function ReceptionDashboard() {
   const today = new Date().toISOString().slice(0, 10)
 
   async function load() {
+    if (!site?.id) return
     setLoading(true)
 
     // Currently on site (checked_in status)
     const { data } = await supabase
       .from('visit_logs')
       .select('*, visitor:visitors(*)')
+      .eq('site_id', site.id)
       .eq('status', 'checked_in')
       .gte('checked_in_at', `${today}T00:00:00`)
       .order('checked_in_at', { ascending: false })
@@ -29,22 +33,25 @@ export default function ReceptionDashboard() {
     const { count } = await supabase
       .from('visit_logs')
       .select('*', { count: 'exact', head: true })
+      .eq('site_id', site.id)
       .gte('checked_in_at', `${today}T00:00:00`)
 
     setCheckedInToday(count ?? 0)
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [site?.id])
 
-  // Realtime subscription
+  // Realtime subscription — re-subscribe when site changes
   useEffect(() => {
+    if (!site?.id) return
     const channel = supabase
-      .channel('visit_logs_reception')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'visit_logs' }, () => load())
+      .channel(`visit_logs_reception_${site.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'visit_logs',
+        filter: `site_id=eq.${site.id}` }, () => load())
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [])
+  }, [site?.id])
 
   return (
     <div>
@@ -103,26 +110,28 @@ export default function ReceptionDashboard() {
 
         {/* Today's sign-out history */}
         {checkedInToday > activeVisitors.length && (
-          <TodayHistory today={today} />
+          <TodayHistory today={today} siteId={site?.id ?? ''} />
         )}
       </div>
     </div>
   )
 }
 
-function TodayHistory({ today }: { today: string }) {
+function TodayHistory({ today, siteId }: { today: string; siteId: string }) {
   const [logs, setLogs] = useState<VisitLog[]>([])
 
   useEffect(() => {
+    if (!siteId) return
     supabase
       .from('visit_logs')
       .select('*, visitor:visitors(*)')
+      .eq('site_id', siteId)
       .eq('status', 'checked_out')
       .gte('checked_in_at', `${today}T00:00:00`)
       .order('checked_out_at', { ascending: false })
       .limit(20)
       .then(({ data }) => setLogs((data as VisitLog[]) ?? []))
-  }, [today])
+  }, [today, siteId])
 
   if (logs.length === 0) return null
 
