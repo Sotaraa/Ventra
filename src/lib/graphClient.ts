@@ -31,7 +31,10 @@ async function graphFetch<T>(
   extraHeaders: Record<string, string> = {}
 ): Promise<T> {
   const token = await getAccessToken(msalInstance)
-  const response = await fetch(`https://graph.microsoft.com/v1.0${endpoint}`, {
+  const url = endpoint.startsWith('https://')
+    ? endpoint
+    : `https://graph.microsoft.com/v1.0${endpoint}`
+  const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -42,6 +45,25 @@ async function graphFetch<T>(
     throw new Error(`Graph API error: ${response.status} ${response.statusText}`)
   }
   return response.json() as Promise<T>
+}
+
+// Fetches ALL pages of a Graph list endpoint, following @odata.nextLink automatically.
+async function graphFetchAll<T>(
+  msalInstance: IPublicClientApplication,
+  endpoint: string,
+  extraHeaders: Record<string, string> = {}
+): Promise<T[]> {
+  const all: T[] = []
+  let next: string | null = endpoint
+
+  while (next) {
+    type PageResult = { value: T[]; '@odata.nextLink'?: string }
+    const page: PageResult = await graphFetch<PageResult>(msalInstance, next, extraHeaders)
+    all.push(...page.value)
+    next = page['@odata.nextLink'] ?? null
+  }
+
+  return all
 }
 
 export interface GraphUser {
@@ -59,16 +81,15 @@ interface GraphListResponse<T> {
   value: T[]
 }
 
-// Fetch all members of an Azure AD group by group ID
+// Fetch ALL members of an Azure AD group, paginating automatically
 export async function getGroupMembers(
   msalInstance: IPublicClientApplication,
   groupId: string
 ): Promise<GraphUser[]> {
-  const data = await graphFetch<GraphListResponse<GraphUser>>(
+  return graphFetchAll<GraphUser>(
     msalInstance,
-    `/groups/${groupId}/members?$select=id,displayName,givenName,surname,mail,jobTitle,department,userPrincipalName`
+    `/groups/${groupId}/members?$select=id,displayName,givenName,surname,mail,jobTitle,department,userPrincipalName&$top=999`
   )
-  return data.value
 }
 
 // Fetch the signed-in user's profile
@@ -139,13 +160,13 @@ export async function searchUsers(
   return data.value
 }
 
-// List all groups the current user belongs to
+// List ALL groups in the tenant, paginating automatically and sorting alphabetically
 export async function listGroups(
   msalInstance: IPublicClientApplication
 ): Promise<{ id: string; displayName: string }[]> {
-  const data = await graphFetch<GraphListResponse<{ id: string; displayName: string }>>(
+  const groups = await graphFetchAll<{ id: string; displayName: string }>(
     msalInstance,
-    '/groups?$select=id,displayName&$top=100'
+    '/groups?$select=id,displayName&$top=999&$orderby=displayName'
   )
-  return data.value
+  return groups
 }
