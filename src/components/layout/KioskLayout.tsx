@@ -1,31 +1,11 @@
-import { useState, useEffect } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { Settings } from 'lucide-react'
-import { supabaseKiosk } from '@/lib/supabase'
-
-interface SiteInfo {
-  name: string
-  logo_url: string | null
-}
+import { useSite } from '@/hooks/useSite'
 
 export default function KioskLayout() {
   const navigate = useNavigate()
-  const [site, setSite] = useState<SiteInfo | null>(null)
-
-  useEffect(() => {
-    supabaseKiosk
-      .from('sites')
-      .select('name, logo_url')
-      .eq('is_active', true)
-      .limit(1)
-      .single()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('[KioskLayout] Failed to fetch site:', error)
-        }
-        if (data) setSite(data as SiteInfo)
-      })
-  }, [])
+  const { site } = useSite()
 
   return (
     <div className="min-h-screen flex flex-col select-none" style={{ background: 'linear-gradient(160deg, #022c22 0%, #064e3b 45%, #047857 100%)' }}>
@@ -72,7 +52,7 @@ export default function KioskLayout() {
 
 // ─── School Brand ─────────────────────────────────────────────────────────────
 
-function SchoolBrand({ site }: { site: SiteInfo | null }) {
+function SchoolBrand({ site }: { site: { name: string; logo_url?: string | null } | null }) {
   // While loading, render the same space to avoid layout shift
   if (!site) {
     return <div className="h-12 w-48 rounded-xl bg-white/[0.04] animate-pulse" />
