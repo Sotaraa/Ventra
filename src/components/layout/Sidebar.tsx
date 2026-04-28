@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, UserCheck, ClipboardList,
   BarChart2, Settings, LogOut, ShieldAlert, QrCode,
-  Bell, BookOpen, X, Flame,
+  Bell, BookOpen, X, Flame, Building2,
 } from 'lucide-react'
 import { useAuth } from '@/store/AuthContext'
 import { useApp } from '@/store/AppContext'
@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { label: 'Reports',      path: '/admin/reports',       icon: <BarChart2 size={18} />,       roles: ['super_admin', 'site_admin'],                           group: 'Admin' },
   { label: 'Audit Log',    path: '/admin/audit',         icon: <ClipboardList size={18} />,   roles: ['super_admin', 'site_admin'],                           group: 'Admin' },
   { label: 'Settings',     path: '/admin/settings',      icon: <Settings size={18} />,        roles: ['super_admin', 'site_admin'],                           group: 'Admin' },
+  { label: 'Customers',   path: '/admin/customers',     icon: <Building2 size={18} />,       roles: ['super_admin'],                                            group: 'Sotara' },
 ]
 
 export default function Sidebar() {

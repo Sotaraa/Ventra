@@ -32,6 +32,7 @@ import ReportsPage from '@/pages/admin/ReportsPage'
 import AuditLogPage from '@/pages/admin/AuditLogPage'
 import SettingsPage from '@/pages/admin/SettingsPage'
 import EvacuationPage from '@/pages/admin/EvacuationPage'
+import CustomersPage from '@/pages/admin/CustomersPage'
 
 // Attendance
 import AttendanceDashboard from '@/pages/attendance/AttendanceDashboard'
@@ -108,6 +109,7 @@ export default function App() {
         <Route path="reports" element={<ReportsPage />} />
         <Route path="audit" element={<AuditLogPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="customers" element={<CustomersPage />} />
       </Route>
 
       <Route
