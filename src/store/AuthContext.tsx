@@ -77,7 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle()
 
     if (byEmail) {
-      supabase.from('user_profiles')
+      // Await this — current_user_site_id() RLS helper needs auth_user_id
+      // committed before fetchSite queries the sites table.
+      await supabase.from('user_profiles')
         .update({ auth_user_id: userId, last_login: now })
         .eq('email', email)
       setProfile(byEmail)
