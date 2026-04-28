@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import type { UserProfile } from '@/types'
+import type { Site, UserProfile } from '@/types'
 
 interface AuthContextValue {
   user: User | null
   session: Session | null
   profile: UserProfile | null
+  currentSite: Site | null
   loading: boolean
   signOut: () => Promise<void>
 }
@@ -17,6 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [currentSite, setCurrentSite] = useState<Site | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) fetchProfile(session.user.id, session.user.email)
       else {
         setProfile(null)
+        setCurrentSite(null)
         setLoading(false)
       }
     })
@@ -53,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (byAuthId) {
       supabase.from('user_profiles').update({ last_login: now }).eq('auth_user_id', userId)
       setProfile(byAuthId)
+      await fetchSite(byAuthId.site_id)
       setLoading(false)
       return
     }
@@ -61,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const email = userEmail?.toLowerCase()
     if (!email) {
       setProfile(null)
+      setCurrentSite(null)
       setLoading(false)
       return
     }
@@ -72,16 +77,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle()
 
     if (byEmail) {
-      // Link this auth user to the pre-created profile so future logins hit path 1
       supabase.from('user_profiles')
         .update({ auth_user_id: userId, last_login: now })
         .eq('email', email)
       setProfile(byEmail)
+      await fetchSite(byEmail.site_id)
     } else {
       setProfile(null)
+      setCurrentSite(null)
     }
 
     setLoading(false)
+  }
+
+  async function fetchSite(siteId: string) {
+    const { data } = await supabase
+      .from('sites')
+      .select('*')
+      .eq('id', siteId)
+      .maybeSingle()
+    setCurrentSite(data ?? null)
   }
 
   async function signOut() {
@@ -89,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, currentSite, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   )

@@ -106,6 +106,7 @@ export default function VisitorCheckin() {
       const { data } = await supabase
         .from('persons')
         .select('id, first_name, last_name, full_name, department, email')
+        .eq('site_id', site?.id ?? '')
         .in('group', ['teaching_staff', 'non_teaching_staff'])
         .eq('is_active', true)
         .ilike('full_name', `%${hostSearch}%`)

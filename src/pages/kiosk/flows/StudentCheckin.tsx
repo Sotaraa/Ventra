@@ -35,7 +35,7 @@ export default function StudentCheckin() {
           signed_in_at: now,
           signed_out_at: null,  // clear any previous sign-out so dashboard counts them as on site
         },
-        { onConflict: 'person_id,date', ignoreDuplicates: false }
+        { onConflict: 'site_id,person_id,date', ignoreDuplicates: false }
       )
 
     if (err) {
@@ -124,6 +124,7 @@ export default function StudentCheckin() {
 
   return (
     <PersonBrowser
+      siteId={site?.id ?? ''}
       groups={['student']}
       title="Student Sign In"
       subtitle="Find your name to sign in"

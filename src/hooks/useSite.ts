@@ -1,14 +1,23 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabaseKiosk } from '@/lib/supabase'
+import { useAuth } from '@/store/AuthContext'
 import type { Site } from '@/types'
 
+// Admin: returns the site from AuthContext (no extra DB call, already scoped by RLS).
+// Kiosk (anon): falls back to a direct query using the anon client.
 export function useSite() {
-  const [site, setSite] = useState<Site | null>(null)
-  const [loading, setLoading] = useState(true)
+  const auth = useAuth()
+  const [kioskSite, setKioskSite] = useState<Site | null>(null)
+  const [kioskLoading, setKioskLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const isAuthenticated = !!auth.user
+
   useEffect(() => {
-    supabase
+    if (isAuthenticated) return  // auth context already has the site
+
+    setKioskLoading(true)
+    supabaseKiosk
       .from('sites')
       .select('*')
       .eq('is_active', true)
@@ -16,10 +25,14 @@ export function useSite() {
       .single()
       .then(({ data, error: err }) => {
         if (err) setError(err.message)
-        else setSite(data as Site)
-        setLoading(false)
+        else setKioskSite(data as Site)
+        setKioskLoading(false)
       })
-  }, [])
+  }, [isAuthenticated])
 
-  return { site, loading, error }
+  if (isAuthenticated) {
+    return { site: auth.currentSite, loading: auth.loading, error: null }
+  }
+
+  return { site: kioskSite, loading: kioskLoading, error }
 }

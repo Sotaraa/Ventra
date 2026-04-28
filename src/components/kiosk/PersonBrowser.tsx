@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabaseKiosk as supabase } from '@/lib/supabase'
 import { Search, ChevronLeft } from 'lucide-react'
 import type { Person, PersonGroup } from '@/types'
 
 interface PersonBrowserProps {
+  siteId: string
   groups: PersonGroup[]
   title: string
   subtitle?: string
@@ -14,7 +15,7 @@ interface PersonBrowserProps {
 
 const ALPHABET = ['ALL', 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
 
-export default function PersonBrowser({ groups, title, subtitle, onSelect, onBack, onlySignedIn }: PersonBrowserProps) {
+export default function PersonBrowser({ siteId, groups, title, subtitle, onSelect, onBack, onlySignedIn }: PersonBrowserProps) {
   const [persons, setPersons] = useState<Person[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -25,11 +26,11 @@ export default function PersonBrowser({ groups, title, subtitle, onSelect, onBac
       setLoading(true)
 
       if (onlySignedIn) {
-        // Step 1: get person IDs currently signed in today
         const today = new Date().toISOString().slice(0, 10)
         const { data: records } = await supabase
           .from('attendance_records')
           .select('person_id')
+          .eq('site_id', siteId)
           .eq('date', today)
           .eq('status', 'present')
           .is('signed_out_at', null)
@@ -42,10 +43,10 @@ export default function PersonBrowser({ groups, title, subtitle, onSelect, onBac
           return
         }
 
-        // Step 2: fetch those persons filtered by the relevant groups
         const { data } = await supabase
           .from('persons')
           .select('*')
+          .eq('site_id', siteId)
           .in('id', ids)
           .in('group', groups)
           .eq('is_active', true)
@@ -56,6 +57,7 @@ export default function PersonBrowser({ groups, title, subtitle, onSelect, onBac
         const { data } = await supabase
           .from('persons')
           .select('*')
+          .eq('site_id', siteId)
           .in('group', groups)
           .eq('is_active', true)
           .order('last_name')
@@ -64,8 +66,8 @@ export default function PersonBrowser({ groups, title, subtitle, onSelect, onBac
 
       setLoading(false)
     }
-    load()
-  }, [groups.join(','), onlySignedIn])
+    if (siteId) load()
+  }, [siteId, groups.join(','), onlySignedIn])
 
   const filtered = persons.filter(p => {
     const matchesSearch = search

@@ -121,6 +121,7 @@ export default function StaffCheckin() {
 
   return (
     <PersonBrowser
+      siteId={site?.id ?? ''}
       groups={['teaching_staff', 'non_teaching_staff']}
       title="Staff Sign In"
       subtitle="Find your name to sign in"
