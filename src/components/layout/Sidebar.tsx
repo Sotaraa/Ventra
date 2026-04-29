@@ -158,7 +158,7 @@ export default function Sidebar() {
                   <li key={item.path}>
                     <NavLink
                       to={item.path}
-                      end={item.path === '/admin'}
+                      end
                       className={({ isActive }) =>
                         `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all min-h-touch
                         ${isActive

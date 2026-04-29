@@ -78,12 +78,14 @@ export default function VisitorCheckout() {
     setError('')
     setReason(reasonKey)
 
-    // Use edge function — verify_jwt: false so no auth header is ever checked.
-    // This is the only reliable way to avoid 401s from an expired admin JWT
-    // that may be lingering in the browser from a previous admin session.
-    const { error: err } = await supabase.functions.invoke('kiosk-checkout', {
-      body: { visit_log_id: selected.visit_log_id, reason: reasonKey },
-    })
+    const { error: err } = await supabase
+      .from('visit_logs')
+      .update({
+        checked_out_at: new Date().toISOString(),
+        status: 'checked_out',
+        check_out_reason: reasonKey,
+      })
+      .eq('id', selected.visit_log_id)
 
     if (err) {
       setError('Something went wrong. Please try again.')
