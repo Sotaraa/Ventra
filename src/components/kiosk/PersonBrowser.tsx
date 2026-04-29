@@ -75,7 +75,7 @@ export default function PersonBrowser({ siteId, groups, title, subtitle, onSelec
       : true
     const matchesLetter = letter === 'ALL'
       ? true
-      : (p.last_name || p.full_name || '').toUpperCase().startsWith(letter)
+      : (p.first_name || p.full_name || '').toUpperCase().startsWith(letter)
     return matchesSearch && matchesLetter
   })
 
