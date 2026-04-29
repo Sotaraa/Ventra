@@ -47,7 +47,8 @@ async function notifyHost(
   msalInstance: ReturnType<typeof useMsal>['instance'],
   form: FormData,
   site: Site,
-  visitLogId: string
+  visitLogId: string,
+  senderEmail?: string | null,
 ) {
   if (!form.host?.email) return
   const visitorName = `${form.first_name.trim()} ${form.last_name.trim()}`
@@ -63,7 +64,7 @@ async function notifyHost(
     <p style="color:#888;font-size:12px">Sent automatically by Ventra VMS</p>
   `
   try {
-    await sendEmail(msalInstance, form.host.email, subject, body)
+    await sendEmail(msalInstance, form.host.email, subject, body, senderEmail)
     await supabase.from('notification_logs').insert({
       site_id: site.id, visit_log_id: visitLogId,
       recipient_email: form.host.email, recipient_name: form.host.full_name,
@@ -95,7 +96,17 @@ export default function VisitorCheckin() {
   const [submitting,    setSubmitting]    = useState(false)
   const [error,         setError]         = useState('')
   const [visitLogId,    setVisitLogId]    = useState('')
+  const [senderEmail,   setSenderEmail]   = useState<string | null>(null)
   const hostSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Load notification sender email from site settings
+  useEffect(() => {
+    if (!site?.id) return
+    supabase.from('sites').select('settings').eq('id', site.id).single()
+      .then(({ data }) => {
+        setSenderEmail(data?.settings?.notifications?.notification_sender_email ?? null)
+      })
+  }, [site?.id])
 
   // Debounced host search
   useEffect(() => {
@@ -174,7 +185,7 @@ export default function VisitorCheckin() {
 
     // Notify host — fire and forget
     if (form.host && site && logData) {
-      notifyHost(msalInstance, form, site, logData.id)
+      notifyHost(msalInstance, form, site, logData.id, senderEmail)
     }
 
     setVisitLogId(logData?.id ?? '')

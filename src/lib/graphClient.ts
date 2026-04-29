@@ -102,15 +102,21 @@ export async function getMyProfile(
   )
 }
 
-// Send a notification email via Microsoft Graph
+// Send a notification email via Microsoft Graph.
+// If senderEmail is provided, sends via /users/{senderEmail}/sendMail (shared mailbox).
+// Otherwise sends as the authenticated user (/me/sendMail).
 export async function sendEmail(
   msalInstance: IPublicClientApplication,
   to: string,
   subject: string,
-  body: string
+  body: string,
+  senderEmail?: string | null,
 ): Promise<void> {
   const token = await getAccessToken(msalInstance)
-  await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+  const endpoint = senderEmail
+    ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderEmail)}/sendMail`
+    : 'https://graph.microsoft.com/v1.0/me/sendMail'
+  await fetch(endpoint, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

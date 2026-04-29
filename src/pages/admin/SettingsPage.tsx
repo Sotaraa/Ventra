@@ -205,6 +205,7 @@ function SiteDetailsForm({ siteId }: { siteId: string }) {
 
 function NotificationsForm({ siteId }: { siteId: string }) {
   const [receptionEmail,  setReceptionEmail]  = useState('')
+  const [senderEmail,     setSenderEmail]     = useState('')
   const [teamsWebhook,    setTeamsWebhook]    = useState('')
   const [dbsEmail,        setDbsEmail]        = useState('')
   const [notifyOnArrival, setNotifyOnArrival] = useState(true)
@@ -216,6 +217,7 @@ function NotificationsForm({ siteId }: { siteId: string }) {
       .then(({ data }) => {
         const n = data?.settings?.notifications ?? {}
         setReceptionEmail(n.visitor_arrival_email ?? '')
+        setSenderEmail(n.notification_sender_email ?? '')
         setTeamsWebhook(n.teams_webhook_url ?? '')
         setDbsEmail(n.dbs_expiry_email ?? '')
         setNotifyOnArrival(n.notify_on_arrival ?? true)
@@ -226,10 +228,11 @@ function NotificationsForm({ siteId }: { siteId: string }) {
   async function save() {
     setSaving(true)
     const { error } = await saveSiteSettings(siteId, 'notifications', {
-      visitor_arrival_email: receptionEmail || null,
-      teams_webhook_url:     teamsWebhook   || null,
-      dbs_expiry_email:      dbsEmail       || null,
-      notify_on_arrival:     notifyOnArrival,
+      visitor_arrival_email:      receptionEmail || null,
+      notification_sender_email:  senderEmail    || null,
+      teams_webhook_url:          teamsWebhook   || null,
+      dbs_expiry_email:           dbsEmail       || null,
+      notify_on_arrival:          notifyOnArrival,
     })
     if (error) { toast.error('Failed to save') } else { toast.success('Notification settings saved') }
     setSaving(false)
@@ -265,18 +268,39 @@ function NotificationsForm({ siteId }: { siteId: string }) {
           <ToggleSwitch checked={notifyOnArrival} onChange={setNotifyOnArrival} />
         </div>
         {notifyOnArrival && (
-          <div>
-            <label className="label">
-              Reception / Central CC Email
-              <span className="ml-1 text-gray-400 font-normal text-xs">(optional, copied on every arrival)</span>
-            </label>
-            <input
-              type="email"
-              className="input"
-              value={receptionEmail}
-              onChange={e => setReceptionEmail(e.target.value)}
-              placeholder="reception@school.com"
-            />
+          <div className="space-y-3">
+            <div>
+              <label className="label">
+                Send notifications from
+                <span className="ml-1 text-gray-400 font-normal text-xs">(optional — shared mailbox address)</span>
+              </label>
+              <input
+                type="email"
+                className="input"
+                value={senderEmail}
+                onChange={e => setSenderEmail(e.target.value)}
+                placeholder="ventra@school.com"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                Leave blank to send from your Microsoft 365 account. Enter a shared mailbox
+                (e.g. <span className="font-mono">ventra@school.com</span>) if you want notifications
+                to come from a dedicated address. The mailbox must grant <strong>Send As</strong> permission
+                to your IT admin account in Exchange Online.
+              </p>
+            </div>
+            <div>
+              <label className="label">
+                Reception / Central CC Email
+                <span className="ml-1 text-gray-400 font-normal text-xs">(optional, copied on every arrival)</span>
+              </label>
+              <input
+                type="email"
+                className="input"
+                value={receptionEmail}
+                onChange={e => setReceptionEmail(e.target.value)}
+                placeholder="reception@school.com"
+              />
+            </div>
           </div>
         )}
       </div>
