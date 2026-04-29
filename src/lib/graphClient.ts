@@ -71,7 +71,7 @@ export interface GraphUser {
   displayName: string
   givenName: string
   surname: string
-  mail: string
+  mail?: string | null
   jobTitle?: string
   department?: string
   userPrincipalName: string

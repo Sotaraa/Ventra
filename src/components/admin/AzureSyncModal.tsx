@@ -162,13 +162,16 @@ export default function AzureSyncModal({ siteId, onClose, onSynced }: Props) {
       .eq('site_id', siteId)
       .eq('azure_oid', member.id).maybeSingle()
 
+    // Prefer mail, fall back to userPrincipalName (always set in Azure AD)
+    const resolvedEmail = member.mail || member.userPrincipalName || null
+
     if (existing) {
       const changed = existing.first_name !== firstName || existing.last_name !== lastName ||
-        existing.email !== (member.mail ?? null) || existing.department !== (member.department ?? null) ||
+        existing.email !== resolvedEmail || existing.department !== (member.department ?? null) ||
         existing.group !== group
       if (changed) {
         await supabase.from('persons').update({ first_name: firstName, last_name: lastName,
-          email: member.mail ?? null, department: member.department ?? null, group, is_active: true })
+          email: resolvedEmail, department: member.department ?? null, group, is_active: true })
           .eq('id', existing.id)
         result.updated++
       } else { result.skipped++ }
@@ -176,7 +179,7 @@ export default function AzureSyncModal({ siteId, onClose, onSynced }: Props) {
       const { error } = await supabase.from('persons').insert({
         site_id: siteId, azure_oid: member.id, group,
         first_name: firstName, last_name: lastName,
-        email: member.mail ?? null, department: member.department ?? null, is_active: true,
+        email: resolvedEmail, department: member.department ?? null, is_active: true,
       })
       if (error) result.errors++; else result.added++
     }
