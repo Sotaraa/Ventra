@@ -103,8 +103,9 @@ export async function getMyProfile(
 }
 
 // Send a notification email via Microsoft Graph.
-// If senderEmail is provided, sends via /users/{senderEmail}/sendMail (shared mailbox).
-// Otherwise sends as the authenticated user (/me/sendMail).
+// If senderEmail is provided, tries /users/{senderEmail}/sendMail first (shared mailbox).
+// Automatically falls back to /me/sendMail if the shared mailbox call fails
+// (e.g. Send As permission not yet granted in Exchange Online).
 export async function sendEmail(
   msalInstance: IPublicClientApplication,
   to: string,
@@ -113,23 +114,38 @@ export async function sendEmail(
   senderEmail?: string | null,
 ): Promise<void> {
   const token = await getAccessToken(msalInstance)
-  const endpoint = senderEmail
-    ? `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderEmail)}/sendMail`
-    : 'https://graph.microsoft.com/v1.0/me/sendMail'
-  await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+
+  const payload = JSON.stringify({
+    message: {
+      subject,
+      body: { contentType: 'HTML', content: body },
+      toRecipients: [{ emailAddress: { address: to } }],
     },
-    body: JSON.stringify({
-      message: {
-        subject,
-        body: { contentType: 'HTML', content: body },
-        toRecipients: [{ emailAddress: { address: to } }],
-      },
-    }),
   })
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  }
+
+  // Try shared mailbox first if configured
+  if (senderEmail) {
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderEmail)}/sendMail`,
+      { method: 'POST', headers, body: payload },
+    )
+    if (res.ok || res.status === 202) return  // success
+    // Shared mailbox failed (likely missing Send As permission) — fall through to /me
+    console.warn(`[Ventra] Shared mailbox send failed (${res.status}), falling back to /me/sendMail`)
+  }
+
+  // Send as authenticated user
+  const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+    method: 'POST', headers, body: payload,
+  })
+  if (!res.ok && res.status !== 202) {
+    throw new Error(`sendMail failed: ${res.status}`)
+  }
 }
 
 // Find a user by email address (tries mail and userPrincipalName).
