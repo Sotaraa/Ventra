@@ -1,0 +1,28 @@
+<svg width="260" height="64" viewBox="0 0 260 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="markGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon mark: 64×64 -->
+  <rect width="64" height="64" rx="14" fill="url(#markGrad)"/>
+
+  <!-- V chevron -->
+  <path d="M16 21 L32 46 L48 21"
+        stroke="white" stroke-width="4"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Amber entry dot -->
+  <circle cx="32" cy="15" r="4.5" fill="#F59E0B"/>
+
+  <!-- Wordmark -->
+  <text x="80" y="36"
+        font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="26" font-weight="700" fill="#064e3b" letter-spacing="-0.5">Ventra</text>
+
+  <text x="81" y="52"
+        font-family="'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="9" font-weight="600" fill="#059669" letter-spacing="3">VISITOR MANAGEMENT</text>
+</svg>
