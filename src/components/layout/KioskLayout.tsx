@@ -35,7 +35,7 @@ export default function KioskLayout() {
       {/* Footer */}
       <footer className="relative flex items-center justify-center py-4 px-6">
         <p className="text-white/25 text-xs tracking-wide">
-          Touch the screen to begin &bull; Powered by Ventra
+          Touch the screen to begin &bull; Powered by Sotara Ventra
         </p>
         <button
           onClick={() => navigate('/login')}
