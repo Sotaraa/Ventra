@@ -75,7 +75,7 @@ export default function PersonBrowser({ siteId, groups, title, subtitle, onSelec
       : true
     const matchesLetter = letter === 'ALL'
       ? true
-      : p.last_name.toUpperCase().startsWith(letter)
+      : (p.last_name || p.full_name || '').toUpperCase().startsWith(letter)
     return matchesSearch && matchesLetter
   })
 
@@ -150,7 +150,7 @@ export default function PersonBrowser({ siteId, groups, title, subtitle, onSelec
                   className="w-full text-left px-5 py-4 hover:bg-brand-50 active:bg-brand-100 transition-colors flex items-center gap-4 min-h-[64px]"
                 >
                   <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm flex-shrink-0">
-                    {person.first_name[0]}{person.last_name[0]}
+                    {person.first_name?.[0] ?? person.full_name?.[0] ?? '?'}{person.last_name?.[0] ?? ''}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 text-base">{person.full_name}</p>
