@@ -103,9 +103,11 @@ export async function getMyProfile(
 }
 
 // Send a notification email via Microsoft Graph.
-// If senderEmail is provided, tries /users/{senderEmail}/sendMail first (shared mailbox).
-// Automatically falls back to /me/sendMail if the shared mailbox call fails
-// (e.g. Send As permission not yet granted in Exchange Online).
+// Always calls /me/sendMail (delegated). When senderEmail is set and the
+// authenticated user has Exchange "Send As" permission on that mailbox,
+// adding a `from` field makes the email appear from that address instead.
+// Falls back gracefully to sending as the authenticated user if Send As
+// permission is not yet granted.
 export async function sendEmail(
   msalInstance: IPublicClientApplication,
   to: string,
@@ -115,33 +117,37 @@ export async function sendEmail(
 ): Promise<void> {
   const token = await getAccessToken(msalInstance)
 
-  const payload = JSON.stringify({
-    message: {
-      subject,
-      body: { contentType: 'HTML', content: body },
-      toRecipients: [{ emailAddress: { address: to } }],
-    },
-  })
-
   const headers = {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   }
 
-  // Try shared mailbox first if configured
-  if (senderEmail) {
-    const res = await fetch(
-      `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderEmail)}/sendMail`,
-      { method: 'POST', headers, body: payload },
-    )
-    if (res.ok || res.status === 202) return  // success
-    // Shared mailbox failed (likely missing Send As permission) — fall through to /me
-    console.warn(`[Ventra] Shared mailbox send failed (${res.status}), falling back to /me/sendMail`)
+  const message: Record<string, unknown> = {
+    subject,
+    body: { contentType: 'HTML', content: body },
+    toRecipients: [{ emailAddress: { address: to } }],
   }
 
-  // Send as authenticated user
+  // Try with explicit from address first (requires Send As in Exchange Online)
+  if (senderEmail) {
+    const withFrom = JSON.stringify({
+      message: {
+        ...message,
+        from: { emailAddress: { address: senderEmail, name: 'Ventra VMS' } },
+      },
+    })
+    const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+      method: 'POST', headers, body: withFrom,
+    })
+    if (res.ok || res.status === 202) return
+    // Send As not yet active — fall back to sending as the authenticated user
+    console.warn(`[Ventra] Send As failed (${res.status}), falling back to default sender`)
+  }
+
+  // Send as authenticated user (no from override)
   const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-    method: 'POST', headers, body: payload,
+    method: 'POST', headers,
+    body: JSON.stringify({ message }),
   })
   if (!res.ok && res.status !== 202) {
     throw new Error(`sendMail failed: ${res.status}`)
