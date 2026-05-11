@@ -13,6 +13,7 @@ import LoginPage from '@/pages/auth/LoginPage'
 
 // Kiosk
 import KioskHome from '@/pages/kiosk/KioskHome'
+import KioskEmergency from '@/pages/kiosk/KioskEmergency'
 import KioskSignIn from '@/pages/kiosk/KioskSignIn'
 import KioskSignOut from '@/pages/kiosk/KioskSignOut'
 import StaffCheckin from '@/pages/kiosk/flows/StaffCheckin'
@@ -72,6 +73,9 @@ export default function App() {
       {/* Kiosk — public facing, no auth required */}
       <Route path="/kiosk" element={<KioskLayout />}>
         <Route index element={<KioskHome />} />
+
+        {/* Emergency evacuation — PIN-protected, no auth required */}
+        <Route path="emergency" element={<KioskEmergency />} />
 
         {/* Sign In type selector + flows */}
         <Route path="signin" element={<KioskSignIn />} />

@@ -63,6 +63,7 @@ export interface Person {
   employee_number?: string
   student_id?: string
   azure_oid?: string        // synced from Entra ID
+  emergency_pin?: string | null
   is_active: boolean
   notes?: string
   created_at: string

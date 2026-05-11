@@ -4,7 +4,8 @@ import { useSite } from '@/hooks/useSite'
 import TopBar from '@/components/layout/TopBar'
 import AddPersonModal from '@/components/admin/AddPersonModal'
 import AzureSyncModal from '@/components/admin/AzureSyncModal'
-import { Search, Plus, RefreshCw, Users, Download } from 'lucide-react'
+import EmergencyPinModal from '@/components/admin/EmergencyPinModal'
+import { Search, Plus, RefreshCw, Users, Download, ShieldAlert } from 'lucide-react'
 import type { Person, PersonGroup } from '@/types'
 
 const GROUP_TABS: { label: string; value: PersonGroup | 'all' }[] = [
@@ -34,6 +35,7 @@ export default function PeopleManagement() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editPerson, setEditPerson]     = useState<Person | null>(null)
   const [showSyncModal, setShowSyncModal] = useState(false)
+  const [pinPerson, setPinPerson]         = useState<Person | null>(null)
 
   async function load() {
     if (!site) return
@@ -242,6 +244,22 @@ export default function PeopleManagement() {
                           <span className="text-gray-600 dark:text-gray-400">{p.is_active ? 'Active' : 'Archived'}</span>
                         </span>
                       </td>
+
+                      {/* Emergency PIN */}
+                      <td className="px-4 py-3.5 text-right">
+                        <button
+                          onClick={e => { e.stopPropagation(); setPinPerson(p) }}
+                          title={p.emergency_pin ? 'Emergency PIN set — click to manage' : 'Set emergency PIN'}
+                          className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors ${
+                            p.emergency_pin
+                              ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                              : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100'
+                          }`}
+                        >
+                          <ShieldAlert size={13} />
+                          {p.emergency_pin ? 'PIN' : ''}
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -265,6 +283,14 @@ export default function PeopleManagement() {
           siteId={site.id}
           onClose={() => setShowSyncModal(false)}
           onSynced={load}
+        />
+      )}
+
+      {pinPerson && (
+        <EmergencyPinModal
+          person={pinPerson}
+          onClose={() => setPinPerson(null)}
+          onSaved={load}
         />
       )}
     </div>
