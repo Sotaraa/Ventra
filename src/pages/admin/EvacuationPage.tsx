@@ -31,7 +31,7 @@ interface RollCallItem {
   person_id: string | null
   visit_log_id: string | null
   name: string
-  group: string
+  person_group: string
   accounted: boolean
   accounted_at: string | null
   accounted_by: string | null
@@ -183,7 +183,7 @@ export default function EvacuationPage() {
       evacuation_event_id: event.id,
       person_id: r.person_id,
       name: r.person?.full_name ?? 'Unknown',
-      group: r.person?.group ?? 'staff',
+      person_group: r.person?.group ?? 'staff',
       accounted: false,
     }))
 
@@ -191,7 +191,7 @@ export default function EvacuationPage() {
       evacuation_event_id: event.id,
       visit_log_id: r.id,
       name: r.visitor?.full_name ?? 'Unknown Visitor',
-      group: 'visitor',
+      person_group: 'visitor',
       accounted: false,
     }))
 
@@ -264,8 +264,9 @@ export default function EvacuationPage() {
   // ── Derived values ───────────────────────────────────────────────────────────
 
   const grouped = rollCall.reduce<Record<string, RollCallItem[]>>((acc, item) => {
-    if (!acc[item.group]) acc[item.group] = []
-    acc[item.group].push(item)
+    const key = item.person_group ?? 'unknown'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(item)
     return acc
   }, {})
 
