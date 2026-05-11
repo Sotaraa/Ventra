@@ -29,9 +29,9 @@ interface RollCallItem {
   id: string
   evacuation_event_id: string
   person_id: string | null
-  visit_log_id: string | null
+  visitor_log_id: string | null
   name: string
-  person_group: string
+  group_label: string
   accounted: boolean
   accounted_at: string | null
   accounted_by: string | null
@@ -59,7 +59,7 @@ export default function EvacuationPage() {
       .from('evacuation_roll_calls')
       .select('*')
       .eq('evacuation_event_id', eventId)
-      .order('group')
+      .order('group_label')
       .order('name')
     const items = (data ?? []) as RollCallItem[]
     setRollCall(items)
@@ -183,15 +183,15 @@ export default function EvacuationPage() {
       evacuation_event_id: event.id,
       person_id: r.person_id,
       name: r.person?.full_name ?? 'Unknown',
-      person_group: r.person?.group ?? 'staff',
+      group_label: r.person?.group ?? 'staff',
       accounted: false,
     }))
 
     const visitorRows = (visitors ?? []).map((r: any) => ({
       evacuation_event_id: event.id,
-      visit_log_id: r.id,
+      visitor_log_id: r.id,
       name: r.visitor?.full_name ?? 'Unknown Visitor',
-      person_group: 'visitor',
+      group_label: 'visitor',
       accounted: false,
     }))
 
@@ -264,7 +264,7 @@ export default function EvacuationPage() {
   // ── Derived values ───────────────────────────────────────────────────────────
 
   const grouped = rollCall.reduce<Record<string, RollCallItem[]>>((acc, item) => {
-    const key = item.person_group ?? 'unknown'
+    const key = item.group_label ?? 'unknown'
     if (!acc[key]) acc[key] = []
     acc[key].push(item)
     return acc
