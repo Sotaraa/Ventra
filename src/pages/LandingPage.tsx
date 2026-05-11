@@ -67,7 +67,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-white/50 text-lg leading-relaxed max-w-lg mx-auto mb-10">
-            Ventra replaces paper registers with a modern kiosk that tracks staff, students, and visitors — all in one place.
+            Ventra replaces paper registers with a modern kiosk that tracks staff, students, and visitors, all in one place.
           </p>
 
           {/* CTA */}
