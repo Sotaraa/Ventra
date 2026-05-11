@@ -5,6 +5,9 @@ import { useAuth } from '@/store/AuthContext'
 import AppShell from '@/components/layout/AppShell'
 import KioskLayout from '@/components/layout/KioskLayout'
 
+// Landing
+import LandingPage from '@/pages/LandingPage'
+
 // Auth
 import LoginPage from '@/pages/auth/LoginPage'
 
@@ -46,15 +49,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-// After Microsoft 365 OAuth, Supabase redirects back to the site root.
-// This component checks whether the user is authenticated and routes accordingly,
-// so we don't need to whitelist /admin in Supabase's redirect URLs list.
-function RootRedirect() {
-  const { user, loading } = useAuth()
-  if (loading) return <FullPageSpinner />
-  return <Navigate to={user ? '/admin' : '/kiosk'} replace />
-}
-
 function FullPageSpinner() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -69,8 +63,8 @@ function FullPageSpinner() {
 export default function App() {
   return (
     <Routes>
-      {/* Root → kiosk for guests, /admin for authenticated users (handles OAuth redirect) */}
-      <Route path="/" element={<RootRedirect />} />
+      {/* Root — SOTARA-owned landing page; handles OAuth redirect for authenticated users */}
+      <Route path="/" element={<LandingPage />} />
 
       {/* Admin login — subtle, not linked from homepage */}
       <Route path="/login" element={<LoginPage />} />
@@ -138,7 +132,7 @@ export default function App() {
       </Route>
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/kiosk" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
