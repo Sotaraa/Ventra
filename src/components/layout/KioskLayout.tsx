@@ -44,9 +44,14 @@ export default function KioskLayout() {
         {/* School logo / name — left */}
         <SchoolBrand site={site} />
 
-        {/* Live clock — right */}
-        <div className="text-right">
+        {/* Clock + Sotara logo — right */}
+        <div className="flex flex-col items-end gap-2">
           <KioskClock />
+          <img
+            src="/companylogo.png"
+            alt="Sotara"
+            className="h-5 w-auto opacity-30"
+          />
         </div>
       </header>
 
