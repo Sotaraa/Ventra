@@ -49,8 +49,8 @@ export default function KioskLayout() {
           <img
             src="/companylogo.png"
             alt="Sotara"
-            className="h-8 w-auto opacity-50"
-            style={{ filter: 'brightness(0) invert(1)' }}
+            className="h-8 w-auto opacity-70"
+            style={{ mixBlendMode: 'screen' }}
           />
           <div className="text-right">
             <KioskClock />
