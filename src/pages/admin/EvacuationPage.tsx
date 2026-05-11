@@ -129,19 +129,34 @@ export default function EvacuationPage() {
     const today = new Date().toISOString().slice(0, 10)
 
     // Snapshot all on-site persons (attendance present, not yet signed out)
-    const { data: attendance } = await supabase
+    const { data: attendance, error: attErr } = await supabase
       .from('attendance_records')
       .select('person_id, person:persons(full_name, group)')
+      .eq('site_id', site.id)
       .eq('date', today)
       .eq('status', 'present')
       .is('signed_out_at', null)
 
+    if (attErr) {
+      console.error('[Ventra] Attendance fetch failed:', attErr)
+      toast.error('Could not fetch attendance records')
+      setTriggering(false)
+      return
+    }
+
     // Snapshot all checked-in visitors
-    const { data: visitors } = await supabase
+    const { data: visitors, error: visErr } = await supabase
       .from('visit_logs')
       .select('id, visitor:visitors(full_name, visitor_type)')
+      .eq('site_id', site.id)
       .eq('status', 'checked_in')
       .gte('checked_in_at', `${today}T00:00:00`)
+
+    if (visErr) {
+      console.error('[Ventra] Visitor fetch failed:', visErr)
+      // Non-fatal — proceed without visitors rather than blocking the evacuation
+      console.warn('[Ventra] Proceeding without visitor snapshot')
+    }
 
     const totalOnSite = (attendance?.length ?? 0) + (visitors?.length ?? 0)
 
@@ -182,7 +197,18 @@ export default function EvacuationPage() {
 
     const allRows = [...personRows, ...visitorRows]
     if (allRows.length > 0) {
-      await supabase.from('evacuation_roll_calls').insert(allRows)
+      const { error: insertErr } = await supabase
+        .from('evacuation_roll_calls')
+        .insert(allRows)
+
+      if (insertErr) {
+        console.error('[Ventra] Roll call insert failed:', insertErr)
+        toast.error(`Roll call failed: ${insertErr.message}`)
+        // Clean up the orphaned event so it doesn't block future evacuations
+        await supabase.from('evacuation_events').delete().eq('id', event.id)
+        setTriggering(false)
+        return
+      }
     }
 
     toast.success('Evacuation triggered — roll call started')
