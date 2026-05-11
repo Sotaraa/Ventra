@@ -114,18 +114,21 @@ export default function KioskEmergency() {
   // ── PIN entry screen ──────────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center select-none"
+      className="min-h-screen flex flex-col items-center select-none"
       style={{ background: 'linear-gradient(160deg, #7f1d1d 0%, #991b1b 45%, #b91c1c 100%)' }}
     >
-      {/* Back */}
-      <button
-        onClick={() => navigate('/kiosk')}
-        className="absolute top-6 left-6 flex items-center gap-2 text-white/40 hover:text-white/70 transition-colors text-sm"
-      >
-        <ChevronLeft size={18} /> Back
-      </button>
+      {/* Back button — top of flow, not absolute */}
+      <div className="w-full px-6 pt-6 pb-2">
+        <button
+          onClick={() => navigate('/kiosk')}
+          className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm"
+        >
+          <ChevronLeft size={18} /> Back to home
+        </button>
+      </div>
 
       {/* Header */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full">
       <div className="text-center mb-10">
         <div className="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-4">
           <Flame size={32} className="text-white animate-pulse" />
@@ -184,6 +187,7 @@ export default function KioskEmergency() {
           Verifying...
         </div>
       )}
+      </div>{/* end flex-1 */}
     </div>
   )
 }
