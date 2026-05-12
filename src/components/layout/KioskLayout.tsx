@@ -5,7 +5,7 @@ import { useSite } from '@/hooks/useSite'
 
 export default function KioskLayout() {
   const navigate = useNavigate()
-  const { site, noSlug } = useSite()
+  const { site, loading, noSlug } = useSite()
 
   // No ?site= param — show a clear error rather than silently loading a random school
   if (noSlug) {
@@ -18,6 +18,34 @@ export default function KioskLayout() {
           <h2 className="text-2xl font-bold text-white mb-2">No School Selected</h2>
           <p className="text-white/50 text-sm leading-relaxed mb-6">
             This kiosk URL is missing a school identifier. Please use the full URL provided by your administrator.
+          </p>
+          <p className="text-white/25 text-xs font-mono">
+            e.g. ventra.sotara.co.uk/kiosk?site=your-school
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/login')}
+          className="absolute right-6 bottom-4 flex items-center gap-1.5 text-white/20 hover:text-white/60 transition-colors text-xs py-1 px-2 rounded"
+          title="Staff admin login"
+        >
+          <Settings size={11} />
+          Admin
+        </button>
+      </div>
+    )
+  }
+
+  // Slug was found but no matching active site in DB — bad/stale slug in sessionStorage
+  if (!loading && !site) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center select-none" style={{ background: 'linear-gradient(160deg, #022c22 0%, #064e3b 45%, #047857 100%)' }}>
+        <div className="text-center max-w-sm px-6">
+          <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mx-auto mb-5">
+            <AlertTriangle size={28} className="text-amber-300" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">School Not Found</h2>
+          <p className="text-white/50 text-sm leading-relaxed mb-6">
+            The school identifier in this URL is not recognised. Please check the URL and try again.
           </p>
           <p className="text-white/25 text-xs font-mono">
             e.g. ventra.sotara.co.uk/kiosk?site=your-school
