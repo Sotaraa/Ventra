@@ -18,6 +18,18 @@ export type AlertSeverity = 'info' | 'warning' | 'critical'
 
 // ─── Core Entities ────────────────────────────────────────────────────────────
 
+export interface BadgeSettings {
+  enabled:      boolean
+  printer_type: 'browser' | 'brother' | 'dymo' | 'zebra'
+  accent_color: string
+  show_photo:   boolean
+  show_host:    boolean
+  show_purpose: boolean
+  show_company: boolean
+  show_time:    boolean
+  show_qr:      boolean
+}
+
 export interface Site {
   id: string
   slug?: string
@@ -30,6 +42,10 @@ export interface Site {
   is_active: boolean
   tenant_id?: string
   created_at: string
+  settings?: {
+    badge?: Partial<BadgeSettings>
+    [key: string]: unknown
+  }
 }
 
 export interface UserProfile {

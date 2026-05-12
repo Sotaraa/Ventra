@@ -195,11 +195,19 @@ export default function VisitorCheckin() {
 
   // ─── Print Badge step ───────────────────────────────────────────────────────
   if (step === 'print') {
+    const bs = site?.settings?.badge
     return (
       <PrintBadgeStep
         form={form}
         visitLogId={visitLogId}
         siteName={site?.name ?? 'Ventra'}
+        accentColor={bs?.accent_color ?? '#022c22'}
+        showPhoto={bs?.show_photo   ?? true}
+        showHost={bs?.show_host    ?? true}
+        showPurpose={bs?.show_purpose ?? true}
+        showCompany={bs?.show_company ?? true}
+        showTime={bs?.show_time    ?? true}
+        showQr={bs?.show_qr      ?? true}
         onDone={() => setStep('success')}
       />
     )
@@ -531,11 +539,25 @@ function PrintBadgeStep({
   form,
   visitLogId,
   siteName,
+  accentColor,
+  showPhoto,
+  showHost,
+  showPurpose,
+  showCompany,
+  showTime,
+  showQr,
   onDone,
 }: {
   form: FormData
   visitLogId: string
   siteName: string
+  accentColor: string
+  showPhoto:   boolean
+  showHost:    boolean
+  showPurpose: boolean
+  showCompany: boolean
+  showTime:    boolean
+  showQr:      boolean
   onDone: () => void
 }) {
   const [printing,    setPrinting]    = useState(false)
@@ -556,12 +578,14 @@ function PrintBadgeStep({
 
   function buildBadgeHTML(): string {
     const initials = `${form.first_name[0] ?? ''}${form.last_name[0] ?? ''}`
-    const photoTag = photoB64
-      ? `<img src="${photoB64}" class="photo-img" />`
+    const photoTag = showPhoto
+      ? (photoB64
+          ? `<img src="${photoB64}" class="photo-img" />`
+          : `<div class="photo-init">${initials}</div>`)
       : `<div class="photo-init">${initials}</div>`
-    const qrTag = qrB64
+    const qrTag = showQr && qrB64
       ? `<img src="${qrB64}" class="qr" />`
-      : `<div class="qr-placeholder"></div>`
+      : ''
 
     return `<!DOCTYPE html>
 <html>
@@ -597,7 +621,7 @@ function PrintBadgeStep({
   .left {
     width: 36mm;
     height: 51mm;
-    background: #022c22;
+    background: ${accentColor};
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -741,14 +765,14 @@ function PrintBadgeStep({
         <div class="details">
           <div class="name">${form.first_name} ${form.last_name}</div>
           <div class="divider"></div>
-          ${form.company  ? `<div class="row"><div class="row-label">Company</div><div class="row-value">${form.company}</div></div>` : ''}
-          ${form.host     ? `<div class="row"><div class="row-label">Visiting</div><div class="row-value">${form.host.full_name}</div></div>` : ''}
-          ${form.purpose  ? `<div class="row"><div class="row-label">Purpose</div><div class="row-value">${form.purpose}</div></div>` : ''}
+          ${showCompany && form.company  ? `<div class="row"><div class="row-label">Company</div><div class="row-value">${form.company}</div></div>` : ''}
+          ${showHost    && form.host    ? `<div class="row"><div class="row-label">Visiting</div><div class="row-value">${form.host.full_name}</div></div>` : ''}
+          ${showPurpose && form.purpose ? `<div class="row"><div class="row-label">Purpose</div><div class="row-value">${form.purpose}</div></div>` : ''}
         </div>
         ${qrTag}
       </div>
       <div class="bottom">
-        <div class="datetime">${dateStr} &nbsp;·&nbsp; ${timeIn}</div>
+        <div class="datetime">${dateStr}${showTime ? ` &nbsp;·&nbsp; ${timeIn}` : ''}</div>
         <div class="site-name">${siteName}</div>
       </div>
     </div>
@@ -810,8 +834,8 @@ function PrintBadgeStep({
         style={{ width: 340, height: 170, borderRadius: 10, display: 'flex' }}
       >
         {/* Left: photo panel */}
-        <div style={{ width: 120, background: '#022c22', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, flexShrink: 0 }}>
-          {photoB64 || form.photo_url ? (
+        <div style={{ width: 120, background: accentColor, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, flexShrink: 0 }}>
+          {showPhoto && (photoB64 || form.photo_url) ? (
             <img
               src={photoB64 ?? form.photo_url!}
               style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }}
@@ -832,19 +856,19 @@ function PrintBadgeStep({
                 {form.first_name} {form.last_name}
               </p>
               <div style={{ height: 1, background: '#e5e7eb', margin: '5px 0' }} />
-              {form.company && (
+              {showCompany && form.company && (
                 <div style={{ marginBottom: 3 }}>
                   <p style={{ fontSize: 7, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Company</p>
                   <p style={{ fontSize: 10, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{form.company}</p>
                 </div>
               )}
-              {form.host && (
+              {showHost && form.host && (
                 <div style={{ marginBottom: 3 }}>
                   <p style={{ fontSize: 7, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Visiting</p>
                   <p style={{ fontSize: 10, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{form.host.full_name}</p>
                 </div>
               )}
-              {form.purpose && (
+              {showPurpose && form.purpose && (
                 <div>
                   <p style={{ fontSize: 7, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Purpose</p>
                   <p style={{ fontSize: 10, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{form.purpose}</p>
@@ -852,14 +876,14 @@ function PrintBadgeStep({
               )}
             </div>
             {/* QR code preview */}
-            {qrB64 ? (
+            {showQr && (qrB64 ? (
               <img src={qrB64} style={{ width: 56, height: 56, flexShrink: 0 }} />
             ) : (
               <div style={{ width: 56, height: 56, background: '#f3f4f6', borderRadius: 4, flexShrink: 0 }} />
-            )}
+            ))}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f3f4f6', paddingTop: 5 }}>
-            <p style={{ fontSize: 9, color: '#6b7280' }}>{dateStr} · {timeIn}</p>
+            <p style={{ fontSize: 9, color: '#6b7280' }}>{dateStr}{showTime ? ` · ${timeIn}` : ''}</p>
             <p style={{ fontSize: 7, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>{siteName}</p>
           </div>
         </div>
