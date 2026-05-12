@@ -515,6 +515,17 @@ function SuccessScreen({ form, onDone }: { form: FormData; onDone: () => void })
 }
 
 // ─── Print Badge Step ─────────────────────────────────────────────────────────
+// DK-11240: 102mm × 51mm pre-cut label, landscape
+
+async function toBase64(url: string): Promise<string> {
+  const res  = await fetch(url)
+  const blob = await res.blob()
+  return new Promise(resolve => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.readAsDataURL(blob)
+  })
+}
 
 function PrintBadgeStep({
   form,
@@ -527,92 +538,245 @@ function PrintBadgeStep({
   siteName: string
   onDone: () => void
 }) {
-  const [printing, setPrinting] = useState(false)
-  const [printed,  setPrinted]  = useState(false)
+  const [printing,    setPrinting]    = useState(false)
+  const [printed,     setPrinted]     = useState(false)
+  const [photoB64,    setPhotoB64]    = useState<string | null>(null)
+  const [qrB64,       setQrB64]       = useState<string | null>(null)
 
   const timeIn = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
+  // Pre-load images as base64 so they render reliably inside the print iframe
+  useEffect(() => {
+    const qrData = encodeURIComponent(`VENTRA:${visitLogId}`)
+    const qrUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}&color=064e3b&margin=4`
+    toBase64(qrUrl).then(setQrB64).catch(() => {})
+    if (form.photo_url) toBase64(form.photo_url).then(setPhotoB64).catch(() => {})
+  }, [])
+
+  function buildBadgeHTML(): string {
+    const initials = `${form.first_name[0] ?? ''}${form.last_name[0] ?? ''}`
+    const photoTag = photoB64
+      ? `<img src="${photoB64}" class="photo-img" />`
+      : `<div class="photo-init">${initials}</div>`
+    const qrTag = qrB64
+      ? `<img src="${qrB64}" class="qr" />`
+      : `<div class="qr-placeholder"></div>`
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Visitor Badge</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  @page {
+    size: 102mm 51mm;
+    margin: 0;
+  }
+
+  body {
+    width: 102mm;
+    height: 51mm;
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    overflow: hidden;
+    background: #fff;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .badge {
+    display: flex;
+    width: 102mm;
+    height: 51mm;
+    overflow: hidden;
+  }
+
+  /* ── Left panel: photo ── */
+  .left {
+    width: 36mm;
+    height: 51mm;
+    background: #022c22;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3mm;
+    flex-shrink: 0;
+  }
+
+  .photo-img {
+    width: 26mm;
+    height: 26mm;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 0.8mm solid rgba(255,255,255,0.35);
+  }
+
+  .photo-init {
+    width: 26mm;
+    height: 26mm;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: 0.8mm solid rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 12pt;
+    font-weight: 800;
+    letter-spacing: 0.5mm;
+  }
+
+  .visitor-label {
+    color: rgba(255,255,255,0.9);
+    font-size: 5.5pt;
+    font-weight: 700;
+    letter-spacing: 1.5mm;
+    text-transform: uppercase;
+  }
+
+  /* ── Right panel: details ── */
+  .right {
+    flex: 1;
+    padding: 4mm 3.5mm 3mm 4mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 2mm;
+  }
+
+  .details { flex: 1; overflow: hidden; }
+
+  .name {
+    font-size: 11.5pt;
+    font-weight: 800;
+    color: #111;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .divider {
+    height: 0.3mm;
+    background: #e5e7eb;
+    margin: 1.5mm 0;
+  }
+
+  .row { margin-bottom: 1mm; }
+  .row-label {
+    font-size: 5pt;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.4mm;
+    line-height: 1;
+  }
+  .row-value {
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .qr {
+    width: 20mm;
+    height: 20mm;
+    flex-shrink: 0;
+    display: block;
+  }
+  .qr-placeholder {
+    width: 20mm;
+    height: 20mm;
+    background: #f3f4f6;
+    flex-shrink: 0;
+  }
+
+  .bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 0.3mm solid #f3f4f6;
+    padding-top: 1.5mm;
+  }
+
+  .datetime {
+    font-size: 6.5pt;
+    color: #6b7280;
+  }
+
+  .site-name {
+    font-size: 5pt;
+    color: #9ca3af;
+    text-align: right;
+    text-transform: uppercase;
+    letter-spacing: 0.3mm;
+    max-width: 40mm;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+</head>
+<body>
+  <div class="badge">
+    <div class="left">
+      ${photoTag}
+      <div class="visitor-label">Visitor</div>
+    </div>
+    <div class="right">
+      <div class="top">
+        <div class="details">
+          <div class="name">${form.first_name} ${form.last_name}</div>
+          <div class="divider"></div>
+          ${form.company  ? `<div class="row"><div class="row-label">Company</div><div class="row-value">${form.company}</div></div>` : ''}
+          ${form.host     ? `<div class="row"><div class="row-label">Visiting</div><div class="row-value">${form.host.full_name}</div></div>` : ''}
+          ${form.purpose  ? `<div class="row"><div class="row-label">Purpose</div><div class="row-value">${form.purpose}</div></div>` : ''}
+        </div>
+        ${qrTag}
+      </div>
+      <div class="bottom">
+        <div class="datetime">${dateStr} &nbsp;·&nbsp; ${timeIn}</div>
+        <div class="site-name">${siteName}</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`
+  }
+
   async function printBadge() {
     setPrinting(true)
 
-    // Open print dialog targeting the hidden badge element
-    const badgeEl = document.getElementById('visitor-badge-print')
-    if (!badgeEl) { setPrinting(false); return }
+    // Use a hidden iframe — more reliable than window.open() on iOS AirPrint
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:none;opacity:0;'
+    document.body.appendChild(iframe)
 
-    const printWindow = window.open('', '_blank', 'width=400,height=600')
-    if (!printWindow) { setPrinting(false); return }
+    const doc = iframe.contentDocument!
+    doc.open()
+    doc.write(buildBadgeHTML())
+    doc.close()
 
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Visitor Badge — ${form.first_name} ${form.last_name}</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #fff; }
-            .badge { width: 280px; border-radius: 16px; overflow: hidden; border: 2px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-            .badge-header { background: #1e3a5f; color: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; }
-            .badge-title { font-size: 18px; font-weight: 800; letter-spacing: 2px; }
-            .badge-site { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 2px; }
-            .badge-photo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3); }
-            .badge-photo-placeholder { width: 52px; height: 52px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px; }
-            .badge-body { padding: 16px 20px; background: white; }
-            .badge-name { font-size: 20px; font-weight: 800; color: #111; }
-            .badge-row { margin-top: 10px; }
-            .badge-label { font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; }
-            .badge-value { font-size: 13px; font-weight: 600; color: #374151; }
-            .badge-footer { padding: 10px 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
-            .badge-date { font-size: 10px; color: #9ca3af; }
-            .badge-dot { width: 8px; height: 8px; border-radius: 50%; background: #1e3a5f; }
-            @media print { body { margin: 0; } }
-          </style>
-        </head>
-        <body>
-          <div class="badge">
-            <div class="badge-header">
-              <div>
-                <div class="badge-title">VISITOR</div>
-                <div class="badge-site">${siteName}</div>
-              </div>
-              ${form.photo_url
-                ? `<img src="${form.photo_url}" class="badge-photo" />`
-                : `<div class="badge-photo-placeholder">${form.first_name[0]}${form.last_name[0]}</div>`
-              }
-            </div>
-            <div class="badge-body">
-              <div class="badge-name">${form.first_name} ${form.last_name}</div>
-              ${form.company ? `
-                <div class="badge-row">
-                  <div class="badge-label">Company</div>
-                  <div class="badge-value">${form.company}</div>
-                </div>` : ''}
-              ${form.host ? `
-                <div class="badge-row">
-                  <div class="badge-label">Visiting</div>
-                  <div class="badge-value">${form.host.full_name}</div>
-                </div>` : ''}
-              ${form.purpose ? `
-                <div class="badge-row">
-                  <div class="badge-label">Purpose</div>
-                  <div class="badge-value">${form.purpose}</div>
-                </div>` : ''}
-              <div class="badge-row">
-                <div class="badge-label">Signed In</div>
-                <div class="badge-value">${timeIn}</div>
-              </div>
-            </div>
-            <div class="badge-footer">
-              <div class="badge-date">${dateStr}</div>
-              <div class="badge-dot"></div>
-            </div>
-          </div>
-          <script>window.onload = () => { window.print(); window.close(); }<\/script>
-        </body>
-      </html>
-    `)
-    printWindow.document.close()
+    // Give images time to load, then print
+    await new Promise(r => setTimeout(r, 800))
+    iframe.contentWindow!.print()
+    await new Promise(r => setTimeout(r, 500))
+    document.body.removeChild(iframe)
 
-    // Mark badge as printed in DB
+    // Mark as printed in DB
     await supabase.from('visit_logs')
       .update({ badge_printed: true, badge_printed_at: new Date().toISOString() })
       .eq('id', visitLogId)
@@ -622,15 +786,15 @@ function PrintBadgeStep({
     setTimeout(onDone, 2000)
   }
 
-  return (
-    <div className="flex flex-col items-center gap-6 py-6 text-center">
-      <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center">
-        <CheckCircle size={36} className="text-white" />
-      </div>
+  // ── Screen preview (scaled to fit kiosk display) ────────────────────────────
+  // Scale: 102mm → ~340px at 96dpi — we show at a fixed width of 340px
+  const initials = `${form.first_name[0] ?? ''}${form.last_name[0] ?? ''}`
 
+  return (
+    <div className="flex flex-col items-center gap-5 py-4 text-center">
       <div>
         <h2 className="text-3xl font-bold text-white">You're signed in!</h2>
-        <p className="text-brand-200 mt-1 text-lg">Welcome, {form.first_name}</p>
+        <p className="text-brand-200 mt-1">Welcome, {form.first_name} — please collect your badge</p>
       </div>
 
       {form.host && (
@@ -640,32 +804,70 @@ function PrintBadgeStep({
         </div>
       )}
 
-      {/* Badge preview card */}
-      <div id="visitor-badge-print" className="w-56 rounded-2xl overflow-hidden border-2 border-white/20 shadow-xl bg-white text-left">
-        <div className="px-4 py-3 text-white flex items-center justify-between" style={{ backgroundColor: '#1e3a5f' }}>
-          <div>
-            <p className="font-black text-sm tracking-widest">VISITOR</p>
-            <p className="text-white/60 text-[10px]">{siteName}</p>
+      {/* Badge preview — mirrors exact label proportions (102:51 = 2:1) */}
+      <div
+        className="overflow-hidden shadow-2xl border border-white/20"
+        style={{ width: 340, height: 170, borderRadius: 10, display: 'flex' }}
+      >
+        {/* Left: photo panel */}
+        <div style={{ width: 120, background: '#022c22', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, flexShrink: 0 }}>
+          {photoB64 || form.photo_url ? (
+            <img
+              src={photoB64 ?? form.photo_url!}
+              style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)' }}
+            />
+          ) : (
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 24 }}>
+              {initials}
+            </div>
+          )}
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 8, fontWeight: 700, letterSpacing: 4, textTransform: 'uppercase' }}>Visitor</p>
+        </div>
+
+        {/* Right: details panel */}
+        <div style={{ flex: 1, background: '#fff', padding: '12px 11px 10px 13px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#111', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {form.first_name} {form.last_name}
+              </p>
+              <div style={{ height: 1, background: '#e5e7eb', margin: '5px 0' }} />
+              {form.company && (
+                <div style={{ marginBottom: 3 }}>
+                  <p style={{ fontSize: 7, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Company</p>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{form.company}</p>
+                </div>
+              )}
+              {form.host && (
+                <div style={{ marginBottom: 3 }}>
+                  <p style={{ fontSize: 7, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Visiting</p>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{form.host.full_name}</p>
+                </div>
+              )}
+              {form.purpose && (
+                <div>
+                  <p style={{ fontSize: 7, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Purpose</p>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{form.purpose}</p>
+                </div>
+              )}
+            </div>
+            {/* QR code preview */}
+            {qrB64 ? (
+              <img src={qrB64} style={{ width: 56, height: 56, flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 56, height: 56, background: '#f3f4f6', borderRadius: 4, flexShrink: 0 }} />
+            )}
           </div>
-          {form.photo_url
-            ? <img src={form.photo_url} className="w-11 h-11 rounded-full object-cover border-2 border-white/30" />
-            : <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">{form.first_name[0]}{form.last_name[0]}</div>
-          }
-        </div>
-        <div className="px-4 py-3 space-y-2">
-          <p className="font-black text-gray-900 text-base">{form.first_name} {form.last_name}</p>
-          {form.company   && <div><p className="text-[9px] text-gray-400 uppercase tracking-wide">Company</p><p className="text-xs font-semibold text-gray-700">{form.company}</p></div>}
-          {form.host      && <div><p className="text-[9px] text-gray-400 uppercase tracking-wide">Visiting</p><p className="text-xs font-semibold text-gray-700">{form.host.full_name}</p></div>}
-          {form.purpose   && <div><p className="text-[9px] text-gray-400 uppercase tracking-wide">Purpose</p><p className="text-xs font-semibold text-gray-700">{form.purpose}</p></div>}
-          <div><p className="text-[9px] text-gray-400 uppercase tracking-wide">Signed In</p><p className="text-xs font-semibold text-gray-700">{timeIn}</p></div>
-        </div>
-        <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-          <p className="text-[10px] text-gray-400">{dateStr}</p>
-          <div className="w-2 h-2 rounded-full bg-brand-600" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f3f4f6', paddingTop: 5 }}>
+            <p style={{ fontSize: 9, color: '#6b7280' }}>{dateStr} · {timeIn}</p>
+            <p style={{ fontSize: 7, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>{siteName}</p>
+          </div>
         </div>
       </div>
 
-      {/* Print / skip */}
+      <p className="text-white/40 text-xs">Preview · Actual label: 102mm × 51mm (DK-11240)</p>
+
+      {/* Actions */}
       <div className="flex gap-3 w-full">
         <button
           onClick={onDone}
