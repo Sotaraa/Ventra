@@ -24,21 +24,20 @@ export default function StaffCheckin() {
     const today = new Date().toISOString().split('T')[0]
     const now = new Date().toISOString()
 
-    // Upsert: if record already exists for today (e.g. re-entry after lunch), update it.
-    // signed_out_at must be cleared so the dashboard counts them as on site.
+    // Always insert a fresh row — this preserves the full sign-in/sign-out history
+    // when someone signs in, goes for training/lunch, and returns later the same day.
+    // Sign-out targets the latest open record (signed_out_at IS NULL) so it always
+    // pairs with the correct sign-in entry.
     const { error: err } = await supabase
       .from('attendance_records')
-      .upsert(
-        {
-          site_id: site.id,
-          person_id: selected.id,
-          date: today,
-          status: 'present',
-          signed_in_at: now,
-          signed_out_at: null,
-        },
-        { onConflict: 'site_id,person_id,date', ignoreDuplicates: false }
-      )
+      .insert({
+        site_id: site.id,
+        person_id: selected.id,
+        date: today,
+        status: 'present',
+        signed_in_at: now,
+        signed_out_at: null,
+      })
 
     if (err) {
       setError('Something went wrong. Please try again.')

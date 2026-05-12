@@ -26,17 +26,14 @@ export default function StudentCheckin() {
 
     const { error: err } = await supabase
       .from('attendance_records')
-      .upsert(
-        {
-          site_id: site.id,
-          person_id: selected.id,
-          date: today,
-          status: 'present',
-          signed_in_at: now,
-          signed_out_at: null,  // clear any previous sign-out so dashboard counts them as on site
-        },
-        { onConflict: 'site_id,person_id,date', ignoreDuplicates: false }
-      )
+      .insert({
+        site_id: site.id,
+        person_id: selected.id,
+        date: today,
+        status: 'present',
+        signed_in_at: now,
+        signed_out_at: null,
+      })
 
     if (err) {
       setError('Something went wrong. Please try again.')
