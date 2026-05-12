@@ -513,6 +513,7 @@ function BadgePrintingForm({ siteId }: { siteId: string }) {
 
 // ─── Badge Preview ─────────────────────────────────────────────────────────────
 
+// Badge preview mirrors the DK-11240 label (102mm × 51mm) at screen scale (2:1 ratio)
 function BadgePreview({
   accentColor, showHost, showPurpose, showCompany, showTime, showQr, showPhoto,
 }: {
@@ -524,68 +525,94 @@ function BadgePreview({
   showQr: boolean
   showPhoto: boolean
 }) {
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+
   return (
-    <div className="w-52 rounded-2xl border-2 border-gray-200 overflow-hidden shadow-md bg-white select-none text-xs">
-      {/* Accent header */}
-      <div className="px-4 py-3 text-white flex items-center justify-between" style={{ backgroundColor: accentColor }}>
-        <div>
-          <p className="font-bold text-sm tracking-wide">VISITOR</p>
-          <p className="text-white/70 text-[10px] mt-0.5">Ventra VMS</p>
-        </div>
-        {showPhoto && (
-          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-bold">
+    <div
+      className="overflow-hidden shadow-lg border border-gray-200 select-none"
+      style={{ width: 340, height: 170, borderRadius: 8, display: 'flex' }}
+    >
+      {/* Left panel */}
+      <div style={{
+        width: 120, flexShrink: 0, background: accentColor,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7,
+      }}>
+        {showPhoto ? (
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontWeight: 800, fontSize: 20,
+          }}>
+            JS
+          </div>
+        ) : (
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontWeight: 800, fontSize: 20,
+          }}>
             JS
           </div>
         )}
+        <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 7, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase' }}>
+          Visitor
+        </p>
       </div>
 
-      {/* Body */}
-      <div className="px-4 py-3 space-y-2">
-        <div>
-          <p className="text-[11px] text-gray-400">Visitor</p>
-          <p className="font-bold text-gray-900 text-sm">John Smith</p>
-        </div>
-        {showCompany && (
-          <div>
-            <p className="text-[10px] text-gray-400">Company</p>
-            <p className="font-medium text-gray-700">Acme Ltd</p>
+      {/* Right panel */}
+      <div style={{
+        flex: 1, background: '#fff', padding: '11px 10px 9px 12px',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden',
+      }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <p style={{ fontSize: 14, fontWeight: 800, color: '#111', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              John Smith
+            </p>
+            <div style={{ height: 1, background: '#e5e7eb', margin: '4px 0' }} />
+            {showCompany && (
+              <div style={{ marginBottom: 2 }}>
+                <p style={{ fontSize: 6, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Company</p>
+                <p style={{ fontSize: 9, fontWeight: 600, color: '#374151' }}>Acme Ltd</p>
+              </div>
+            )}
+            {showHost && (
+              <div style={{ marginBottom: 2 }}>
+                <p style={{ fontSize: 6, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Visiting</p>
+                <p style={{ fontSize: 9, fontWeight: 600, color: '#374151' }}>Mrs Johnson</p>
+              </div>
+            )}
+            {showPurpose && (
+              <div>
+                <p style={{ fontSize: 6, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Purpose</p>
+                <p style={{ fontSize: 9, fontWeight: 600, color: '#374151' }}>Parent Meeting</p>
+              </div>
+            )}
           </div>
-        )}
-        {showHost && (
-          <div>
-            <p className="text-[10px] text-gray-400">Visiting</p>
-            <p className="font-medium text-gray-700">Mrs Johnson</p>
-          </div>
-        )}
-        {showPurpose && (
-          <div>
-            <p className="text-[10px] text-gray-400">Purpose</p>
-            <p className="font-medium text-gray-700">Parent Meeting</p>
-          </div>
-        )}
-        {showTime && (
-          <div>
-            <p className="text-[10px] text-gray-400">Signed In</p>
-            <p className="font-medium text-gray-700">09:32 AM</p>
-          </div>
-        )}
-        {showQr && (
-          <div className="flex justify-center pt-1">
-            <div className="w-14 h-14 bg-gray-100 rounded-lg grid grid-cols-5 gap-px p-1">
-              {Array.from({ length: 25 }).map((_, i) => (
-                <div key={i} className={`rounded-sm ${Math.random() > 0.4 ? 'bg-gray-800' : 'bg-white'}`} />
+
+          {/* QR code */}
+          {showQr && (
+            <div style={{
+              width: 50, height: 50, flexShrink: 0, borderRadius: 4,
+              background: '#f9fafb', display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 1, padding: 4,
+            }}>
+              {/* Simple static QR-like pattern */}
+              {[1,1,1,1,1,1, 1,0,0,0,0,1, 1,0,1,1,0,1, 1,0,1,0,1,1, 1,0,0,0,0,1, 1,1,1,1,1,1].map((v, i) => (
+                <div key={i} style={{ borderRadius: 1, background: v ? accentColor : 'transparent' }} />
               ))}
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2 border-t border-gray-100 flex items-center justify-between">
-        <p className="text-[10px] text-gray-400">
-          {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-        </p>
-        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
+        {/* Footer */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f3f4f6', paddingTop: 5 }}>
+          <p style={{ fontSize: 8, color: '#6b7280' }}>
+            {dateStr}{showTime ? ' · 09:32 AM' : ''}
+          </p>
+          <p style={{ fontSize: 6, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>Ventra VMS</p>
+        </div>
       </div>
     </div>
   )
