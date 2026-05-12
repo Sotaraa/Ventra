@@ -104,7 +104,7 @@ export default function AuditLogPage() {
     if (kindFilter === 'all' || kindFilter === 'attendance') {
       const { data: signIns } = await supabase
         .from('attendance_records')
-        .select('id, signed_in_at, signed_out_at, status, person:persons(full_name, first_name, last_name, group, year_group, department)')
+        .select('id, signed_in_at, signed_out_at, sign_out_reason, status, person:persons(full_name, first_name, last_name, group, year_group, department)')
         .eq('site_id', site.id)
         .not('signed_in_at', 'is', null)
         .gte('signed_in_at', from)
@@ -141,6 +141,7 @@ export default function AuditLogPage() {
               label: `${p.full_name} signed out`,
               meta: [
                 p.year_group ?? p.department ?? GROUP_LABEL[p.group] ?? '',
+                formatSignOutReason(r.sign_out_reason),
                 format(outTime, 'HH:mm'),
               ].filter(Boolean).join(' · '),
               group: p.group,
@@ -153,7 +154,7 @@ export default function AuditLogPage() {
       // Also catch sign-outs that happened in range but sign-in was before range
       const { data: signOuts } = await supabase
         .from('attendance_records')
-        .select('id, signed_in_at, signed_out_at, person:persons(full_name, first_name, last_name, group, year_group, department)')
+        .select('id, signed_in_at, signed_out_at, sign_out_reason, person:persons(full_name, first_name, last_name, group, year_group, department)')
         .eq('site_id', site.id)
         .not('signed_out_at', 'is', null)
         .gte('signed_out_at', from)
@@ -174,6 +175,7 @@ export default function AuditLogPage() {
           label: `${p.full_name} signed out`,
           meta: [
             p.year_group ?? p.department ?? GROUP_LABEL[p.group] ?? '',
+            formatSignOutReason(r.sign_out_reason),
             format(new Date(r.signed_out_at), 'HH:mm'),
           ].filter(Boolean).join(' · '),
           group: p.group,
@@ -489,6 +491,22 @@ function formatDayLabel(iso: string) {
 
 function countBy(events: AuditEvent[], kind: EventKind) {
   return events.filter(e => e.kind === kind).length
+}
+
+function formatSignOutReason(key: string | null | undefined): string {
+  if (!key) return ''
+  const map: Record<string, string> = {
+    finish_day:     'Finished for the day',
+    lunch_break:    'Lunch break',
+    short_break:    'Short break',
+    medical:        'Medical appointment',
+    field_trip:     'Field trip / Site visit',
+    training:       'Training / CPD',
+    changing_sites: 'Changing sites',
+    personal:       'Personal',
+    other:          'Other',
+  }
+  return map[key] ?? key
 }
 
 function formatAbsenceType(t: string) {
