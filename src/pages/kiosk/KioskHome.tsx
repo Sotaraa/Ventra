@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { UserPlus, LogOut, Flame } from 'lucide-react'
+import { UserPlus, LogOut } from 'lucide-react'
 
 export default function KioskHome() {
   const navigate = useNavigate()
@@ -31,18 +31,6 @@ export default function KioskHome() {
           <div className="text-left">
             <p className="font-bold text-2xl">Sign Out</p>
             <p className="text-sm font-normal text-brand-200">End your visit or working day</p>
-          </div>
-        </button>
-
-        {/* Emergency evacuation — distinct red, requires PIN so safe to expose */}
-        <button
-          onClick={() => navigate('/kiosk/emergency')}
-          className="btn-kiosk bg-red-600/80 text-white border-2 border-red-400/40 hover:bg-red-600 w-full mt-2"
-        >
-          <Flame size={36} className="flex-shrink-0" />
-          <div className="text-left">
-            <p className="font-bold text-2xl">Emergency Evacuation</p>
-            <p className="text-sm font-normal text-red-200">Fire officers only &bull; PIN required</p>
           </div>
         </button>
       </div>

@@ -1,6 +1,6 @@
 import { Outlet, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { Settings, AlertTriangle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Settings, AlertTriangle, LogIn, Flame } from 'lucide-react'
 import { useSite } from '@/hooks/useSite'
 
 export default function KioskLayout() {
@@ -23,14 +23,7 @@ export default function KioskLayout() {
             e.g. ventra.sotara.co.uk/kiosk?site=your-school
           </p>
         </div>
-        <button
-          onClick={() => navigate('/login')}
-          className="absolute right-6 bottom-4 flex items-center gap-1.5 text-white/20 hover:text-white/60 transition-colors text-xs py-1 px-2 rounded"
-          title="Staff admin login"
-        >
-          <Settings size={11} />
-          Admin
-        </button>
+        <AdminMenu />
       </div>
     )
   }
@@ -51,14 +44,7 @@ export default function KioskLayout() {
             e.g. ventra.sotara.co.uk/kiosk?site=your-school
           </p>
         </div>
-        <button
-          onClick={() => navigate('/login')}
-          className="absolute right-6 bottom-4 flex items-center gap-1.5 text-white/20 hover:text-white/60 transition-colors text-xs py-1 px-2 rounded"
-          title="Staff admin login"
-        >
-          <Settings size={11} />
-          Admin
-        </button>
+        <AdminMenu />
       </div>
     )
   }
@@ -101,15 +87,68 @@ export default function KioskLayout() {
         <p className="text-white/25 text-xs tracking-wide">
           Touch the screen to begin &bull; Powered by Sotara.co.uk
         </p>
-        <button
-          onClick={() => navigate('/login')}
-          className="absolute right-6 bottom-3 flex items-center gap-1.5 text-white/20 hover:text-white/60 transition-colors text-xs py-1 px-2 rounded"
-          title="Staff admin login"
-        >
-          <Settings size={11} />
-          Admin
-        </button>
+        <AdminMenu />
       </footer>
+    </div>
+  )
+}
+
+// ─── Admin Menu ───────────────────────────────────────────────────────────────
+
+function AdminMenu() {
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Close when tapping outside
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent | TouchEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('touchstart', handleClick)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('touchstart', handleClick)
+    }
+  }, [open])
+
+  return (
+    <div ref={ref} className="absolute right-6 bottom-3">
+      {/* Expandable menu — pops up above the cog */}
+      {open && (
+        <div className="absolute bottom-full right-0 mb-2 flex flex-col gap-1 items-end">
+          <button
+            onClick={() => { setOpen(false); navigate('/login') }}
+            className="flex items-center gap-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 border border-white/15 backdrop-blur-sm transition-all text-xs py-2 px-3 rounded-lg whitespace-nowrap"
+          >
+            <LogIn size={12} />
+            Admin Login
+          </button>
+          <button
+            onClick={() => { setOpen(false); navigate('/kiosk/emergency') }}
+            className="flex items-center gap-2 text-red-300/80 hover:text-red-200 bg-red-900/30 hover:bg-red-900/50 border border-red-500/20 backdrop-blur-sm transition-all text-xs py-2 px-3 rounded-lg whitespace-nowrap"
+          >
+            <Flame size={12} />
+            Emergency Evacuation
+          </button>
+        </div>
+      )}
+
+      {/* COG toggle button */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={`flex items-center gap-1.5 transition-colors text-xs py-1 px-2 rounded ${
+          open ? 'text-white/60' : 'text-white/20 hover:text-white/50'
+        }`}
+        title="Admin options"
+      >
+        <Settings size={11} className={open ? 'rotate-45 transition-transform duration-200' : 'transition-transform duration-200'} />
+        Admin
+      </button>
     </div>
   )
 }
