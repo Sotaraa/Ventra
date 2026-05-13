@@ -4,7 +4,6 @@ import { Settings, AlertTriangle, LogIn, Flame } from 'lucide-react'
 import { useSite } from '@/hooks/useSite'
 
 export default function KioskLayout() {
-  const navigate = useNavigate()
   const { site, loading, noSlug } = useSite()
 
   // No ?site= param — show a clear error rather than silently loading a random school
